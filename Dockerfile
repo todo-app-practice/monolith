@@ -1,14 +1,9 @@
-FROM golang:1.24.3-alpine as build
+FROM golang:1.24.3-alpine
 
 WORKDIR /home/app
 
 COPY . .
 
-RUN go build -o main cmd/todo-app/main.go
+RUN go install github.com/air-verse/air@latest
 
-FROM alpine:latest
-WORKDIR /root/
-
-COPY --from=build /home/app/main .
-
-CMD ["./main"]
+CMD ["air", "./cmd/todo-app"]

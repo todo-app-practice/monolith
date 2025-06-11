@@ -2,6 +2,7 @@ services:
   todo-app:
     container_name: todo-app
     build: .
+    working_dir: /home/app
     ports:
       - "8765:8765"
     volumes:
@@ -14,6 +15,7 @@ services:
       DB_NAME: todo
     depends_on:
       - mysql
+    command: ["air"]
 
   mysql:
     image: mysql:8
