@@ -25,12 +25,36 @@ func InitializeServer() {
 }
 
 func addEndpoints() {
-	e.GET("/", func(c echo.Context) error {
+	e.GET("/", func(ctx echo.Context) error {
 		logger.Infow("testing zappy...",
 			"attempt", 3,
 			"backoff", time.Second,
 		)
 
-		return c.String(http.StatusOK, "Hello, World!")
+		return ctx.String(http.StatusOK, "Hello, World!.")
+	})
+
+	e.GET("/todo-items", func(ctx echo.Context) error {
+		logger.Infow("reading todo item...")
+
+		return ctx.String(http.StatusOK, "read todo item.")
+	})
+
+	e.POST("/todo-items", func(ctx echo.Context) error {
+		logger.Infow("creating todo item...")
+
+		return ctx.String(http.StatusOK, "created todo item.")
+	})
+
+	e.PUT("/todo-items/:id", func(ctx echo.Context) error {
+		logger.Infow("updating todo item...")
+
+		return ctx.String(http.StatusOK, "updated todo item.")
+	})
+
+	e.DELETE("/todo-items/:id", func(ctx echo.Context) error {
+		logger.Infow("deleting todo item...")
+
+		return ctx.String(http.StatusOK, "deleted todo item.")
 	})
 }
