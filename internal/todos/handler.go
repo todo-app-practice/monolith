@@ -106,7 +106,7 @@ func (h *endpointHandler) hello(ctx echo.Context) error {
 func (h *endpointHandler) getAll(ctx echo.Context) error {
 	h.logger.Infow("reading todo item...")
 
-	items, err := h.service.GetAll()
+	items, err := h.service.GetAll(ctx.Request().Context())
 	if err != nil {
 		h.logger.Warn("could not read todo items", "error", err.Error())
 
@@ -127,7 +127,7 @@ func (h *endpointHandler) create(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, errors.ResponseError{Error: "could not read todo-item"})
 	}
 
-	err = h.service.Create(&item)
+	err = h.service.Create(ctx.Request().Context(), &item)
 	if err != nil {
 		h.logger.Warn("could not create todo-item", "error", err.Error())
 
@@ -156,7 +156,7 @@ func (h *endpointHandler) updateById(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, errors.ResponseError{Error: "invalid id"})
 	}
 
-	item, err := h.service.UpdateById(id, itemInput)
+	item, err := h.service.UpdateById(ctx.Request().Context(), id, itemInput)
 	if err != nil {
 		h.logger.Warn("could not update todo-item", "error", err.Error())
 
@@ -176,7 +176,7 @@ func (h *endpointHandler) deleteById(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, errors.ResponseError{Error: "invalid id"})
 	}
 
-	err = h.service.DeleteById(id)
+	err = h.service.DeleteById(ctx.Request().Context(), id)
 	if err != nil {
 		h.logger.Warn("could not delete todo-item", "error", err.Error())
 
