@@ -5,11 +5,13 @@ import (
 	"go.uber.org/zap"
 	"net/http"
 	"time"
+	todo_items "todo-app/todo-items"
 )
 
 var (
 	logger *zap.SugaredLogger
 	e      *echo.Echo
+	s      todo_items.Service
 )
 
 func InitializeServer() {
@@ -17,7 +19,10 @@ func InitializeServer() {
 	defer baseLogger.Sync() // flushes buffer, if any
 	logger = baseLogger.Sugar()
 
+	s = todo_items.GetService(logger)
+
 	e = echo.New()
+	e.HideBanner = true
 
 	addEndpoints()
 
