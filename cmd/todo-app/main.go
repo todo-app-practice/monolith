@@ -1,9 +1,9 @@
 package main
 
 import (
-	"todo-app/handlers"
+	server "todo-app/cmd/app-server"
 )
 
 func main() {
-	handlers.InitializeServer()
+	server.InitializeServer()
 }

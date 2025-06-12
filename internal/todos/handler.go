@@ -1,4 +1,4 @@
-package handlers
+package todos
 
 import (
 	"github.com/labstack/echo/v4"
@@ -6,14 +6,17 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-	todo_items2 "todo-app/internal/todos"
 )
 
-var (
-	logger *zap.SugaredLogger
-	e      *echo.Echo
-	s      todo_items2.Service
-)
+type EndpointHandler interface {
+	AddEndpoints()
+}
+
+type endpointHandler struct {
+	logger  *zap.SugaredLogger
+	service Service
+	e       *echo.Echo
+}
 
 type endpoint struct {
 	Method  string
@@ -30,43 +33,41 @@ var endpoints = []endpoint{
 	{
 		Method:  http.MethodGet,
 		Path:    "/todos",
-		Handler: getToDoItems,
+		Handler: getAll,
 	},
 	{
 		Method:  http.MethodPost,
 		Path:    "/todos",
-		Handler: createToDoItem,
+		Handler: create,
 	},
 	{
 		Method:  http.MethodPut,
 		Path:    "/todos/:id",
-		Handler: updateToDoItem,
+		Handler: updateById,
 	},
 	{
 		Method:  http.MethodDelete,
 		Path:    "/todos/:id",
-		Handler: deleteToDoItem,
+		Handler: deleteById,
 	},
 }
 
-func InitializeServer() {
-	baseLogger, _ := zap.NewProduction()
-	defer baseLogger.Sync() // flushes buffer, if any
-	logger = baseLogger.Sugar()
+var h *endpointHandler
 
-	s = todo_items2.GetService(logger)
+func GetEndpointHandler(logger *zap.SugaredLogger, service Service, e *echo.Echo) EndpointHandler {
+	h = &endpointHandler{
+		logger:  logger,
+		service: service,
+		e:       e,
+	}
 
-	e = echo.New()
-	e.HideBanner = true
-
-	addEndpoints()
-
-	logger.Fatal(e.Start(":8765"))
+	return h
 }
 
-func addEndpoints() {
+func (handler *endpointHandler) AddEndpoints() {
 	for _, endpoint := range endpoints {
-		method(e, endpoint.Method, endpoint.Path, endpoint.Handler)
+		h.logger.Infow("adding endpoint", "method", endpoint.Method, "path", endpoint.Path)
+		method(handler.e, endpoint.Method, endpoint.Path, endpoint.Handler)
 	}
 }
 
@@ -89,7 +90,7 @@ func getUrlId(ctx echo.Context) (uint, error) {
 	idString := ctx.Param("id")
 	id, err := strconv.ParseUint(idString, 10, 64)
 	if err != nil {
-		logger.Warn("could not parse id", "error", err.Error())
+		h.logger.Warn("could not parse id", "error", err.Error())
 
 		return 0, err
 	}
@@ -98,7 +99,7 @@ func getUrlId(ctx echo.Context) (uint, error) {
 }
 
 func hello(ctx echo.Context) error {
-	logger.Infow("testing zappy...",
+	h.logger.Infow("testing zappy...",
 		"attempt", 3,
 		"backoff", time.Second,
 	)
@@ -106,12 +107,12 @@ func hello(ctx echo.Context) error {
 	return ctx.String(http.StatusOK, "Hello, World!")
 }
 
-func getToDoItems(ctx echo.Context) error {
-	logger.Infow("reading todo item...")
+func getAll(ctx echo.Context) error {
+	h.logger.Infow("reading todo item...")
 
-	items, err := s.GetToDoItems()
+	items, err := h.service.GetAll()
 	if err != nil {
-		logger.Warn("could not read todo items", "error", err.Error())
+		h.logger.Warn("could not read todo items", "error", err.Error())
 
 		return ctx.String(http.StatusInternalServerError, err.Error())
 	}
@@ -119,35 +120,35 @@ func getToDoItems(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, items)
 }
 
-func createToDoItem(ctx echo.Context) error {
-	logger.Infow("creating todo item...")
+func create(ctx echo.Context) error {
+	h.logger.Infow("creating todo item...")
 
-	item := todo_items2.ToDoItem{}
+	item := ToDoItem{}
 	err := ctx.Bind(&item)
 	if err != nil {
-		logger.Warn("could not bind body to todo-item struct", "error", err.Error())
+		h.logger.Warn("could not bind body to todo-item struct", "error", err.Error())
 
 		return ctx.String(http.StatusBadRequest, "could not read todo-item")
 	}
 
-	err = s.CreateToDoItem(&item)
+	err = h.service.Create(&item)
 	if err != nil {
-		logger.Warn("could not create todo-item", "error", err.Error())
+		h.logger.Warn("could not create todo-item", "error", err.Error())
 
 		return ctx.String(http.StatusBadRequest, "could not create todo-item")
 	}
-	logger.Infow("created todo item successfully")
+	h.logger.Infow("created todo item successfully")
 
 	return ctx.JSON(http.StatusOK, item)
 }
 
-func updateToDoItem(ctx echo.Context) error {
-	logger.Infow("updating todo item...")
+func updateById(ctx echo.Context) error {
+	h.logger.Infow("updating todo item...")
 
-	item := todo_items2.ToDoItemUpdateInput{}
+	item := ToDoItemUpdateInput{}
 	err := ctx.Bind(&item)
 	if err != nil {
-		logger.Warn("could not bind body to todo-item struct", "error", err.Error())
+		h.logger.Warn("could not bind body to todo-item struct", "error", err.Error())
 
 		return ctx.String(http.StatusBadRequest, "could not read todo-item")
 	}
@@ -157,9 +158,9 @@ func updateToDoItem(ctx echo.Context) error {
 		return ctx.String(http.StatusBadRequest, "invalid id")
 	}
 
-	err = s.UpdateToDoItem(id, item)
+	err = h.service.UpdateById(id, item)
 	if err != nil {
-		logger.Warn("could not update todo-item", "error", err.Error())
+		h.logger.Warn("could not update todo-item", "error", err.Error())
 
 		return ctx.String(http.StatusBadRequest, "could not update todo-item")
 	}
@@ -167,17 +168,17 @@ func updateToDoItem(ctx echo.Context) error {
 	return ctx.String(http.StatusOK, "updated todo item")
 }
 
-func deleteToDoItem(ctx echo.Context) error {
-	logger.Infow("deleting todo item...")
+func deleteById(ctx echo.Context) error {
+	h.logger.Infow("deleting todo item...")
 
 	id, err := getUrlId(ctx)
 	if err != nil {
 		return ctx.String(http.StatusBadRequest, "invalid id")
 	}
 
-	err = s.DeleteToDoItem(id)
+	err = h.service.DeleteById(id)
 	if err != nil {
-		logger.Warn("could not delete todo-item", "error", err.Error())
+		h.logger.Warn("could not delete todo-item", "error", err.Error())
 
 		return ctx.String(http.StatusBadRequest, "could not delete todo-item")
 	}
