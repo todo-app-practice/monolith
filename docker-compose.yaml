@@ -5,6 +5,7 @@ services:
     working_dir: /home/app
     ports:
       - "8765:8765"
+      - "2345:2345"
     volumes:
       - type: bind
         source: .
