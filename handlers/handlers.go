@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-	todo_items "todo-app/todo-items"
+	todo_items2 "todo-app/internal/todos"
 )
 
 var (
 	logger *zap.SugaredLogger
 	e      *echo.Echo
-	s      todo_items.Service
+	s      todo_items2.Service
 )
 
 type endpoint struct {
@@ -29,22 +29,22 @@ var endpoints = []endpoint{
 	},
 	{
 		Method:  http.MethodGet,
-		Path:    "/todo-items",
+		Path:    "/todos",
 		Handler: getToDoItems,
 	},
 	{
 		Method:  http.MethodPost,
-		Path:    "/todo-items",
+		Path:    "/todos",
 		Handler: createToDoItem,
 	},
 	{
 		Method:  http.MethodPut,
-		Path:    "/todo-items/:id",
+		Path:    "/todos/:id",
 		Handler: updateToDoItem,
 	},
 	{
 		Method:  http.MethodDelete,
-		Path:    "/todo-items/:id",
+		Path:    "/todos/:id",
 		Handler: deleteToDoItem,
 	},
 }
@@ -54,7 +54,7 @@ func InitializeServer() {
 	defer baseLogger.Sync() // flushes buffer, if any
 	logger = baseLogger.Sugar()
 
-	s = todo_items.GetService(logger)
+	s = todo_items2.GetService(logger)
 
 	e = echo.New()
 	e.HideBanner = true
@@ -122,7 +122,7 @@ func getToDoItems(ctx echo.Context) error {
 func createToDoItem(ctx echo.Context) error {
 	logger.Infow("creating todo item...")
 
-	item := todo_items.ToDoItem{}
+	item := todo_items2.ToDoItem{}
 	err := ctx.Bind(&item)
 	if err != nil {
 		logger.Warn("could not bind body to todo-item struct", "error", err.Error())
@@ -144,7 +144,7 @@ func createToDoItem(ctx echo.Context) error {
 func updateToDoItem(ctx echo.Context) error {
 	logger.Infow("updating todo item...")
 
-	item := todo_items.ToDoItemUpdateInput{}
+	item := todo_items2.ToDoItemUpdateInput{}
 	err := ctx.Bind(&item)
 	if err != nil {
 		logger.Warn("could not bind body to todo-item struct", "error", err.Error())

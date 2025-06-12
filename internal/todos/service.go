@@ -1,4 +1,4 @@
-package todo_items
+package todos
 
 import (
 	"errors"
