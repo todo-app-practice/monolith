@@ -1,8 +1,8 @@
 package todo_items
 
 import (
+	"errors"
 	"fmt"
-	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -10,8 +10,10 @@ import (
 )
 
 type Service interface {
-	CreateToDoItem(ctx *echo.Context, item ToDoItem) error
-	GetToDoItems(ctx *echo.Context) ([]ToDoItem, error)
+	CreateToDoItem(item *ToDoItem) error
+	GetToDoItems() ([]ToDoItem, error)
+	UpdateToDoItem(id uint, item ToDoItemUpdateInput) error
+	DeleteToDoItem(id uint) error
 }
 
 type service struct {
@@ -55,13 +57,16 @@ func (s *service) initializeDb() error {
 	return nil
 }
 
-func (s *service) CreateToDoItem(ctx *echo.Context, item ToDoItem) error {
-	s.db.Create(&item)
+func (s *service) CreateToDoItem(item *ToDoItem) error {
+	result := s.db.Create(item)
+	if result.Error != nil {
+		return result.Error
+	}
 
 	return nil
 }
 
-func (s *service) GetToDoItems(ctx *echo.Context) ([]ToDoItem, error) {
+func (s *service) GetToDoItems() ([]ToDoItem, error) {
 	var items []ToDoItem
 	result := s.db.Find(&items)
 
@@ -70,4 +75,35 @@ func (s *service) GetToDoItems(ctx *echo.Context) ([]ToDoItem, error) {
 	}
 
 	return items, nil
+}
+
+func (s *service) UpdateToDoItem(id uint, item ToDoItemUpdateInput) error {
+	updates := map[string]interface{}{}
+
+	if item.Text != nil {
+		updates["text"] = item.Text
+	}
+	if item.Done != nil {
+		updates["done"] = item.Done
+	}
+
+	if len(updates) == 0 {
+		return errors.New("no updates found")
+	}
+
+	result := s.db.Model(&ToDoItem{}).Where("id = ?", id).Updates(updates)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+
+func (s *service) DeleteToDoItem(id uint) error {
+	result := s.db.Delete(&ToDoItem{}, id)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
 }

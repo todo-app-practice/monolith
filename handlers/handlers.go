@@ -4,6 +4,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"net/http"
+	"strconv"
 	"time"
 	todo_items "todo-app/todo-items"
 )
@@ -84,6 +85,18 @@ func method(e *echo.Echo, method string, path string, handler echo.HandlerFunc) 
 	}
 }
 
+func getUrlId(ctx echo.Context) (uint, error) {
+	idString := ctx.Param("id")
+	id, err := strconv.ParseUint(idString, 10, 64)
+	if err != nil {
+		logger.Warn("could not parse id", "error", err.Error())
+
+		return 0, err
+	}
+
+	return uint(id), nil
+}
+
 func hello(ctx echo.Context) error {
 	logger.Infow("testing zappy...",
 		"attempt", 3,
@@ -96,7 +109,7 @@ func hello(ctx echo.Context) error {
 func getToDoItems(ctx echo.Context) error {
 	logger.Infow("reading todo item...")
 
-	items, err := s.GetToDoItems(&ctx)
+	items, err := s.GetToDoItems()
 	if err != nil {
 		logger.Warn("could not read todo items", "error", err.Error())
 
@@ -117,7 +130,7 @@ func createToDoItem(ctx echo.Context) error {
 		return ctx.String(http.StatusBadRequest, "could not read todo-item")
 	}
 
-	err = s.CreateToDoItem(&ctx, item)
+	err = s.CreateToDoItem(&item)
 	if err != nil {
 		logger.Warn("could not create todo-item", "error", err.Error())
 
@@ -131,11 +144,43 @@ func createToDoItem(ctx echo.Context) error {
 func updateToDoItem(ctx echo.Context) error {
 	logger.Infow("updating todo item...")
 
+	item := todo_items.ToDoItemUpdateInput{}
+	err := ctx.Bind(&item)
+	if err != nil {
+		logger.Warn("could not bind body to todo-item struct", "error", err.Error())
+
+		return ctx.String(http.StatusBadRequest, "could not read todo-item")
+	}
+
+	id, err := getUrlId(ctx)
+	if err != nil {
+		return ctx.String(http.StatusBadRequest, "invalid id")
+	}
+
+	err = s.UpdateToDoItem(id, item)
+	if err != nil {
+		logger.Warn("could not update todo-item", "error", err.Error())
+
+		return ctx.String(http.StatusBadRequest, "could not update todo-item")
+	}
+
 	return ctx.String(http.StatusOK, "updated todo item")
 }
 
 func deleteToDoItem(ctx echo.Context) error {
 	logger.Infow("deleting todo item...")
+
+	id, err := getUrlId(ctx)
+	if err != nil {
+		return ctx.String(http.StatusBadRequest, "invalid id")
+	}
+
+	err = s.DeleteToDoItem(id)
+	if err != nil {
+		logger.Warn("could not delete todo-item", "error", err.Error())
+
+		return ctx.String(http.StatusBadRequest, "could not delete todo-item")
+	}
 
 	return ctx.String(http.StatusOK, "deleted todo item")
 }

@@ -6,6 +6,11 @@ import (
 
 type ToDoItem struct {
 	gorm.Model
-	Done bool   `gorm:"default:false"`
 	Text string `gorm:"not null"`
+	Done bool   `gorm:"default:false"`
+}
+
+type ToDoItemUpdateInput struct {
+	Text *string `json:"text"`
+	Done *bool   `json:"done"`
 }
