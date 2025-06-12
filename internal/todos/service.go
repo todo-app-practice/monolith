@@ -9,7 +9,7 @@ import (
 type Service interface {
 	Create(item *ToDoItem) error
 	GetAll() ([]ToDoItem, error)
-	UpdateById(id uint, item ToDoItemUpdateInput) error
+	UpdateById(id uint, item ToDoItemUpdateInput) (ToDoItem, error)
 	DeleteById(id uint) error
 }
 
@@ -45,7 +45,7 @@ func (s *service) GetAll() ([]ToDoItem, error) {
 	return items, nil
 }
 
-func (s *service) UpdateById(id uint, item ToDoItemUpdateInput) error {
+func (s *service) UpdateById(id uint, item ToDoItemUpdateInput) (ToDoItem, error) {
 	updates := map[string]interface{}{}
 
 	if item.Text != nil {
@@ -56,15 +56,19 @@ func (s *service) UpdateById(id uint, item ToDoItemUpdateInput) error {
 	}
 
 	if len(updates) == 0 {
-		return errors.New("no updates found")
+		return ToDoItem{}, errors.New("no updates found")
 	}
 
 	result := s.db.Model(&ToDoItem{}).Where("id = ?", id).Updates(updates)
 	if result.Error != nil {
-		return result.Error
+		return ToDoItem{}, result.Error
 	}
 
-	return nil
+	var updatedItem ToDoItem
+
+	s.db.First(&updatedItem, id)
+
+	return updatedItem, nil
 }
 
 func (s *service) DeleteById(id uint) error {
