@@ -96,7 +96,14 @@ func hello(ctx echo.Context) error {
 func getToDoItems(ctx echo.Context) error {
 	logger.Infow("reading todo item...")
 
-	return ctx.String(http.StatusOK, "read todo item")
+	items, err := s.GetToDoItems(&ctx)
+	if err != nil {
+		logger.Warn("could not read todo items", "error", err.Error())
+
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	}
+
+	return ctx.JSON(http.StatusOK, items)
 }
 
 func createToDoItem(ctx echo.Context) error {

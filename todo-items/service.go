@@ -11,6 +11,7 @@ import (
 
 type Service interface {
 	CreateToDoItem(ctx *echo.Context, item ToDoItem) error
+	GetToDoItems(ctx *echo.Context) ([]ToDoItem, error)
 }
 
 type service struct {
@@ -19,7 +20,7 @@ type service struct {
 }
 
 func GetService(logger *zap.SugaredLogger) Service {
-	dbString := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s", "root", "root", "mysql", "todo")
+	dbString := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", "root", "root", "mysql", "todo")
 	db, err := gorm.Open(mysql.Open(dbString), &gorm.Config{})
 	if err != nil {
 		logger.Errorw("failed to connect to database", "error", err)
@@ -58,4 +59,15 @@ func (s *service) CreateToDoItem(ctx *echo.Context, item ToDoItem) error {
 	s.db.Create(&item)
 
 	return nil
+}
+
+func (s *service) GetToDoItems(ctx *echo.Context) ([]ToDoItem, error) {
+	var items []ToDoItem
+	result := s.db.Find(&items)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return items, nil
 }
