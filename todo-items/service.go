@@ -10,7 +10,7 @@ import (
 )
 
 type Service interface {
-	CreateToDoItem(ctx *echo.Context, toDoItemText string) error
+	CreateToDoItem(ctx *echo.Context, item ToDoItem) error
 }
 
 type service struct {
@@ -44,18 +44,18 @@ func GetService(logger *zap.SugaredLogger) Service {
 	return &service
 }
 
-func (s *service) CreateToDoItem(ctx *echo.Context, toDoItemText string) error {
-	// TODO
-
-	return nil
-}
-
 func (s *service) initializeDb() error {
 	err := s.db.AutoMigrate(&ToDoItem{})
 
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func (s *service) CreateToDoItem(ctx *echo.Context, item ToDoItem) error {
+	s.db.Create(&item)
 
 	return nil
 }
