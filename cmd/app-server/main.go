@@ -2,6 +2,7 @@ package app_server
 
 import (
 	"fmt"
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
@@ -34,12 +35,15 @@ func InitializeServer() {
 	}
 	logger.Info("initialized database")
 
-	todoService := todos.GetService(logger, db)
+	v := validator.New()
+
+	todoService := todos.GetService(logger, db, v)
 
 	todoEndpointHandler := todos.GetEndpointHandler(
 		logger,
 		todoService,
 		e,
+		v,
 	)
 
 	todoEndpointHandler.AddEndpoints()
