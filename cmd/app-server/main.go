@@ -3,6 +3,7 @@ package app_server
 import (
 	"fmt"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -41,6 +42,9 @@ func InitializeServer() {
 	)
 
 	todoEndpointHandler.AddEndpoints()
+
+	// adding all middlewares here
+	e.Use(middleware.Recover())
 
 	logger.Fatal(e.Start(":8765"))
 }
