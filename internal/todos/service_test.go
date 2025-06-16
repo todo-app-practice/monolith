@@ -2,279 +2,182 @@ package todos
 
 import (
 	"context"
-	"github.com/go-playground/validator/v10"
 	"testing"
-	"time"
+	e "todo-app/internal/errors"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	"gorm.io/driver/mysql"
+	"github.com/stretchr/testify/mock"
 	"gorm.io/gorm"
 )
 
-const (
-	testDBHost     = "localhost"
-	testDBPort     = "3307" // Using the test DB port
-	testDBUser     = "root"
-	testDBPassword = "root"
-	testDBName     = "todo_test"
-)
-
-func setupTestDB(t *testing.T) *gorm.DB {
-	// Connect to the test database container
-	dsn := testDBUser + ":" + testDBPassword + "@tcp(" + testDBHost + ":" + testDBPort + ")/" + testDBName + "?charset=utf8mb4&parseTime=True&loc=Local"
-
-	// Try to connect with retries (container might need time to start)
-	var db *gorm.DB
-	var err error
-	for i := 0; i < 5; i++ {
-		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
-		if err == nil {
-			break
-		}
-		time.Sleep(time.Second * 2)
-	}
-	require.NoError(t, err, "Failed to connect to test database after retries")
-
-	// Auto migrate the schema
-	err = db.AutoMigrate(&ToDoItem{})
-	require.NoError(t, err, "Failed to migrate test database")
-
-	return db
+// MockRepository is a mock for the Repository interface
+type MockRepository struct {
+	mock.Mock
 }
 
-func cleanupTestDB(t *testing.T, db *gorm.DB) {
-	// Clean up the database by dropping all tables
-	err := db.Migrator().DropTable(&ToDoItem{})
-	require.NoError(t, err, "Failed to clean up test database")
+func (m *MockRepository) Create(ctx context.Context, item *ToDoItem) error {
+	args := m.Called(ctx, item)
+	return args.Error(0)
 }
 
-func setupTestService(t *testing.T) (Service, func()) {
-	// Create a test logger
-	logger := zap.NewNop().Sugar()
+func (m *MockRepository) GetAll(ctx context.Context) ([]ToDoItem, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]ToDoItem), args.Error(1)
+}
 
-	// Setup test database
-	db := setupTestDB(t)
+func (m *MockRepository) GetById(ctx context.Context, id uint) (ToDoItem, error) {
+	args := m.Called(ctx, id)
+	return args.Get(0).(ToDoItem), args.Error(1)
+}
 
-	v := validator.New()
+func (m *MockRepository) Update(ctx context.Context, id uint, updates map[string]interface{}) error {
+	args := m.Called(ctx, id, updates)
+	return args.Error(0)
+}
 
-	// Create service instance
-	service := GetService(logger, db, v)
-
-	// Return cleanup function
-	cleanup := func() {
-		cleanupTestDB(t, db)
-	}
-
-	return service, cleanup
+func (m *MockRepository) Delete(ctx context.Context, id uint) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
 }
 
 func TestService_Create(t *testing.T) {
-	service, cleanup := setupTestService(t)
-	defer cleanup()
-
+	mockRepo := new(MockRepository)
+	v := validator.New()
+	service := GetService(nil, mockRepo, v)
 	ctx := context.Background()
 
-	tests := []struct {
-		name    string
-		item    *ToDoItem
-		wantErr bool
-	}{
-		{
-			name: "create valid todo",
-			item: &ToDoItem{
-				Text: "Test todo",
-				Done: false,
-			},
-			wantErr: false,
-		},
-		{
-			name: "create todo with empty text",
-			item: &ToDoItem{
-				Text: "",
-				Done: false,
-			},
-			wantErr: true,
-		},
-	}
+	t.Run("successful creation", func(t *testing.T) {
+		todo := &ToDoItem{Text: "buy milk"}
+		mockRepo.On("Create", ctx, todo).Return(nil).Once()
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := service.Create(ctx, tt.item)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.NotZero(t, tt.item.ID)
-				assert.NotZero(t, tt.item.CreatedAt)
-				assert.NotZero(t, tt.item.UpdatedAt)
-			}
-		})
-	}
+		err := service.Create(ctx, todo)
+		assert.NoError(t, err)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("validation error", func(t *testing.T) {
+		todo := &ToDoItem{Text: ""} // Empty text should fail validation
+
+		err := service.Create(ctx, todo)
+		assert.Error(t, err)
+		responseErr, ok := err.(e.ResponseError)
+		assert.True(t, ok)
+		assert.Equal(t, "invalid item", responseErr.Message)
+		mockRepo.AssertNotCalled(t, "Create", ctx, todo)
+	})
 }
 
 func TestService_GetAll(t *testing.T) {
-	service, cleanup := setupTestService(t)
-	defer cleanup()
-
+	mockRepo := new(MockRepository)
+	v := validator.New()
+	service := GetService(nil, mockRepo, v)
 	ctx := context.Background()
 
-	// Create some test todos
-	todos := []ToDoItem{
+	expectedTodos := []ToDoItem{
 		{Text: "Todo 1", Done: false},
 		{Text: "Todo 2", Done: true},
-		{Text: "Todo 3", Done: false},
 	}
 
-	for i := range todos {
-		err := service.Create(ctx, &todos[i])
-		require.NoError(t, err)
-	}
+	mockRepo.On("GetAll", ctx).Return(expectedTodos, nil).Once()
 
-	// Test getting all todos
-	got, err := service.GetAll(ctx)
-	require.NoError(t, err)
-	assert.Len(t, got, len(todos))
+	todos, err := service.GetAll(ctx)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedTodos, todos)
+	mockRepo.AssertExpectations(t)
+}
 
-	// Verify todos are returned in the correct order
-	for i, todo := range got {
-		assert.Equal(t, todos[i].Text, todo.Text)
-		assert.Equal(t, todos[i].Done, todo.Done)
-	}
+func TestService_GetById(t *testing.T) {
+	mockRepo := new(MockRepository)
+	v := validator.New()
+	service := GetService(nil, mockRepo, v)
+	ctx := context.Background()
+
+	t.Run("successful get", func(t *testing.T) {
+		expectedTodo := ToDoItem{Text: "found me"}
+		expectedTodo.ID = 1
+		mockRepo.On("GetById", ctx, uint(1)).Return(expectedTodo, nil).Once()
+
+		todo, err := service.GetById(ctx, 1)
+		assert.NoError(t, err)
+		assert.Equal(t, expectedTodo, todo)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		mockRepo.On("GetById", ctx, uint(99)).Return(ToDoItem{}, gorm.ErrRecordNotFound).Once()
+
+		_, err := service.GetById(ctx, 99)
+		assert.Error(t, err)
+		assert.Equal(t, gorm.ErrRecordNotFound, err)
+		mockRepo.AssertExpectations(t)
+	})
 }
 
 func TestService_UpdateById(t *testing.T) {
-	service, cleanup := setupTestService(t)
-	defer cleanup()
-
+	mockRepo := new(MockRepository)
+	v := validator.New()
+	service := GetService(nil, mockRepo, v)
 	ctx := context.Background()
 
-	// Create a test todo
-	todo := &ToDoItem{
-		Text: "Original text",
-		Done: false,
-	}
-	err := service.Create(ctx, todo)
-	require.NoError(t, err)
+	t.Run("successful update", func(t *testing.T) {
+		updateInput := ToDoItemUpdateInput{Text: stringPtr("updated text")}
+		updates := map[string]interface{}{"text": "updated text"}
+		updatedTodo := ToDoItem{Text: "updated text"}
+		updatedTodo.ID = 1
 
-	tests := []struct {
-		name    string
-		id      uint
-		updates ToDoItemUpdateInput
-		want    ToDoItem
-		wantErr bool
-	}{
-		{
-			name: "update text only",
-			id:   todo.ID,
-			updates: ToDoItemUpdateInput{
-				Text: stringPtr("Updated text"),
-			},
-			want: ToDoItem{
-				Text: "Updated text",
-				Done: false,
-			},
-			wantErr: false,
-		},
-		{
-			name: "update done status only",
-			id:   todo.ID,
-			updates: ToDoItemUpdateInput{
-				Done: boolPtr(true),
-			},
-			want: ToDoItem{
-				Text: "Updated text", // Should keep previous text
-				Done: true,
-			},
-			wantErr: false,
-		},
-		{
-			name: "update both fields",
-			id:   todo.ID,
-			updates: ToDoItemUpdateInput{
-				Text: stringPtr("New text"),
-				Done: boolPtr(false),
-			},
-			want: ToDoItem{
-				Text: "New text",
-				Done: false,
-			},
-			wantErr: false,
-		},
-		{
-			name:    "update non-existent todo",
-			id:      999,
-			updates: ToDoItemUpdateInput{Text: stringPtr("Won't update")},
-			wantErr: true,
-		},
-		{
-			name:    "no updates provided",
-			id:      todo.ID,
-			updates: ToDoItemUpdateInput{},
-			wantErr: true,
-		},
-	}
+		mockRepo.On("Update", ctx, uint(1), updates).Return(nil).Once()
+		mockRepo.On("GetById", ctx, uint(1)).Return(updatedTodo, nil).Once()
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := service.UpdateById(ctx, tt.id, tt.updates)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.want.Text, got.Text)
-				assert.Equal(t, tt.want.Done, got.Done)
-			}
-		})
-	}
+		todo, err := service.UpdateById(ctx, 1, updateInput)
+		assert.NoError(t, err)
+		assert.Equal(t, updatedTodo, todo)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("no updates provided", func(t *testing.T) {
+		updateInput := ToDoItemUpdateInput{}
+
+		_, err := service.UpdateById(ctx, 1, updateInput)
+		assert.Error(t, err)
+		assert.Equal(t, "no updates found", err.Error())
+		mockRepo.AssertNotCalled(t, "Update")
+	})
+
+	t.Run("update fails", func(t *testing.T) {
+		updateInput := ToDoItemUpdateInput{Done: boolPtr(true)}
+		updates := map[string]interface{}{"done": true}
+		mockRepo.On("Update", ctx, uint(1), updates).Return(gorm.ErrInvalidDB).Once()
+
+		_, err := service.UpdateById(ctx, 1, updateInput)
+		assert.Error(t, err)
+		assert.Equal(t, gorm.ErrInvalidDB, err)
+		mockRepo.AssertExpectations(t)
+	})
 }
 
 func TestService_DeleteById(t *testing.T) {
-	service, cleanup := setupTestService(t)
-	defer cleanup()
-
+	mockRepo := new(MockRepository)
+	v := validator.New()
+	service := GetService(nil, mockRepo, v)
 	ctx := context.Background()
 
-	// Create a test todo
-	todo := &ToDoItem{
-		Text: "To be deleted",
-		Done: false,
-	}
-	err := service.Create(ctx, todo)
-	require.NoError(t, err)
+	t.Run("successful delete", func(t *testing.T) {
+		mockRepo.On("Delete", ctx, uint(1)).Return(nil).Once()
 
-	tests := []struct {
-		name    string
-		id      uint
-		wantErr bool
-	}{
-		{
-			name:    "delete existing todo",
-			id:      todo.ID,
-			wantErr: false,
-		},
-		{
-			name:    "delete non-existent todo",
-			id:      999,
-			wantErr: false, // GORM doesn't return error for non-existent deletes
-		},
-	}
+		err := service.DeleteById(ctx, 1)
+		assert.NoError(t, err)
+		mockRepo.AssertExpectations(t)
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := service.DeleteById(ctx, tt.id)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				// Verify todo is deleted
-				_, err := service.GetById(ctx, tt.id)
-				assert.Error(t, err)
-				assert.Equal(t, gorm.ErrRecordNotFound, err)
-			}
-		})
-	}
+	t.Run("delete fails", func(t *testing.T) {
+		mockRepo.On("Delete", ctx, uint(1)).Return(gorm.ErrInvalidDB).Once()
+
+		err := service.DeleteById(ctx, 1)
+		assert.Error(t, err)
+		assert.Equal(t, gorm.ErrInvalidDB, err)
+		mockRepo.AssertExpectations(t)
+	})
 }
 
 // Helper functions for creating pointers

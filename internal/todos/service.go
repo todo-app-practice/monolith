@@ -51,10 +51,10 @@ func (s *service) UpdateById(ctx context.Context, id uint, item ToDoItemUpdateIn
 	updates := map[string]interface{}{}
 
 	if item.Text != nil && *item.Text != "" {
-		updates["text"] = item.Text
+		updates["text"] = *item.Text
 	}
 	if item.Done != nil {
-		updates["done"] = item.Done
+		updates["done"] = *item.Done
 	}
 
 	if len(updates) == 0 {
