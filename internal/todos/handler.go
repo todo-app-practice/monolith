@@ -140,7 +140,7 @@ func (h *endpointHandler) create(ctx echo.Context) error {
 	if err != nil {
 		h.logger.Warn("could not create todo-item", "error", err.Error())
 
-		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: "could not create todo-item"})
+		return ctx.JSON(http.StatusBadRequest, err)
 	}
 	h.logger.Infow("created todo item successfully")
 

@@ -35,9 +35,11 @@ func InitializeServer() {
 	}
 	logger.Info("initialized database")
 
+	todoRepository := todos.GetRepository(logger, db)
+
 	v := validator.New()
 
-	todoService := todos.GetService(logger, db, v)
+	todoService := todos.GetService(logger, todoRepository, v)
 
 	todoEndpointHandler := todos.GetEndpointHandler(
 		logger,
