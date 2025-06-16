@@ -114,8 +114,13 @@ func (h *endpointHandler) hello(ctx echo.Context) error {
 
 func (h *endpointHandler) getAll(ctx echo.Context) error {
 	h.logger.Infow("reading todo item...")
+	details := PaginationDetails{}
 
-	items, err := h.service.GetAll(ctx.Request().Context())
+	details.Page, _ = strconv.Atoi(ctx.QueryParam("page"))
+	details.Limit, _ = strconv.Atoi(ctx.QueryParam("limit"))
+	details.Order = ctx.QueryParam("order")
+
+	items, err := h.service.GetAll(ctx.Request().Context(), details)
 	if err != nil {
 		h.logger.Warn("could not read todo items", "error", err.Error())
 

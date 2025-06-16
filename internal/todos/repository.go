@@ -9,7 +9,7 @@ import (
 
 type Repository interface {
 	Create(ctx context.Context, item *ToDoItem) error
-	GetAll(ctx context.Context) ([]ToDoItem, error)
+	GetAll(ctx context.Context, details PaginationDetails) ([]ToDoItem, error)
 	GetById(ctx context.Context, id uint) (ToDoItem, error)
 	Update(ctx context.Context, id uint, updates map[string]interface{}) error
 	Delete(ctx context.Context, id uint) error
@@ -38,9 +38,19 @@ func (r *repository) Create(ctx context.Context, item *ToDoItem) error {
 	return nil
 }
 
-func (r *repository) GetAll(ctx context.Context) ([]ToDoItem, error) {
+func (r *repository) GetAll(ctx context.Context, details PaginationDetails) ([]ToDoItem, error) {
 	var items []ToDoItem
-	result := r.db.WithContext(ctx).Find(&items)
+	db := r.db.WithContext(ctx).Model(&ToDoItem{})
+
+	if details.Page > 0 && details.Limit > 0 {
+		db = db.Offset((details.Page - 1) * details.Limit).Limit(details.Limit)
+	}
+
+	if details.Order == "asc" || details.Order == "desc" {
+		db = db.Order("done " + details.Order)
+	}
+
+	result := db.Find(&items)
 	if result.Error != nil {
 		r.logger.Errorw("failed to find all todo items", "error", result.Error)
 

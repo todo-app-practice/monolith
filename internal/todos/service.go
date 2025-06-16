@@ -11,7 +11,7 @@ import (
 
 type Service interface {
 	Create(ctx context.Context, item *ToDoItem) error
-	GetAll(ctx context.Context) ([]ToDoItem, error)
+	GetAll(ctx context.Context, details PaginationDetails) ([]ToDoItem, error)
 	GetById(ctx context.Context, id uint) (ToDoItem, error)
 	UpdateById(ctx context.Context, id uint, item ToDoItemUpdateInput) (ToDoItem, error)
 	DeleteById(ctx context.Context, id uint) error
@@ -39,8 +39,10 @@ func (s *service) Create(ctx context.Context, item *ToDoItem) error {
 	return s.repository.Create(ctx, item)
 }
 
-func (s *service) GetAll(ctx context.Context) ([]ToDoItem, error) {
-	return s.repository.GetAll(ctx)
+func (s *service) GetAll(ctx context.Context, details PaginationDetails) ([]ToDoItem, error) {
+	s.logger.Infow("get all todos", "details", details)
+
+	return s.repository.GetAll(ctx, details)
 }
 
 func (s *service) GetById(ctx context.Context, id uint) (ToDoItem, error) {

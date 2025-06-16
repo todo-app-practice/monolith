@@ -14,3 +14,9 @@ type ToDoItemUpdateInput struct {
 	Text *string `json:"text"`
 	Done *bool   `json:"done"`
 }
+
+type PaginationDetails struct {
+	Page  int
+	Limit int
+	Order string
+}
