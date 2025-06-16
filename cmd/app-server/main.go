@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/gommon/log"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -44,7 +45,10 @@ func InitializeServer() {
 	todoEndpointHandler.AddEndpoints()
 
 	// adding all middlewares here
-	e.Use(middleware.Recover())
+	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
+		StackSize: 2 << 10,
+		LogLevel:  log.ERROR,
+	}))
 
 	logger.Fatal(e.Start(":8765"))
 }
