@@ -20,3 +20,13 @@ type PaginationDetails struct {
 	Limit int
 	Order string
 }
+
+type PaginationMetadata struct {
+	ResultCount int
+	TotalCount  int
+}
+
+type PaginatedResponse struct {
+	Data []ToDoItem         `json:"data"`
+	Meta PaginationMetadata `json:"metadata, omitempty"`
+}

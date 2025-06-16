@@ -13,6 +13,7 @@ type Repository interface {
 	GetById(ctx context.Context, id uint) (ToDoItem, error)
 	Update(ctx context.Context, id uint, updates map[string]interface{}) error
 	Delete(ctx context.Context, id uint) error
+	CountAll(ctx context.Context) int
 }
 
 type repository struct {
@@ -92,4 +93,11 @@ func (r *repository) Delete(ctx context.Context, id uint) error {
 	}
 
 	return nil
+}
+
+func (r *repository) CountAll(ctx context.Context) int {
+	var count int64
+	r.db.WithContext(ctx).Model(&ToDoItem{}).Count(&count)
+
+	return int(count)
 }

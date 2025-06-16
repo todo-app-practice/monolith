@@ -120,14 +120,14 @@ func (h *endpointHandler) getAll(ctx echo.Context) error {
 	details.Limit, _ = strconv.Atoi(ctx.QueryParam("limit"))
 	details.Order = ctx.QueryParam("order")
 
-	items, err := h.service.GetAll(ctx.Request().Context(), details)
+	items, metadata, err := h.service.GetAll(ctx.Request().Context(), details)
 	if err != nil {
 		h.logger.Warn("could not read todo items", "error", err.Error())
 
 		return ctx.JSON(http.StatusInternalServerError, e.ResponseError{Message: "could not read todo-items"})
 	}
 
-	return ctx.JSON(http.StatusOK, items)
+	return ctx.JSON(http.StatusOK, PaginatedResponse{Data: items, Meta: metadata})
 }
 
 func (h *endpointHandler) create(ctx echo.Context) error {
