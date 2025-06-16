@@ -55,3 +55,13 @@ To follow logs for a specific service:
 ```bash
 make logs srv=todo-app
 ```
+
+### Debugging
+
+The local environment container also installs delve, so we can make use of debugging and live reloading while developing.
+
+In order to make use of delve, you just need to connect to it through your IDE.
+
+You have to add a new Go Remote debug configuration, that uses port `2345`.
+
+There is no need to rebuild the app container after every code change, because air will rebuild the app on file modifications and run it using delve.
