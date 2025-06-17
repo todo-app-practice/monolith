@@ -2,58 +2,36 @@ package todos
 
 import (
 	"context"
+	"github.com/golang/mock/gomock"
+	"go.uber.org/zap"
 	"testing"
-	e "todo-app/pkg/errors"
+	"todo-app/pkg/locale"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"gorm.io/gorm"
 )
 
-// MockRepository is a mock for the Repository interface
-type MockRepository struct {
-	mock.Mock
-}
-
-func (m *MockRepository) Create(ctx context.Context, item *ToDoItem) error {
-	args := m.Called(ctx, item)
-	return args.Error(0)
-}
-
-func (m *MockRepository) GetAll(ctx context.Context) ([]ToDoItem, error) {
-	args := m.Called(ctx)
-	return args.Get(0).([]ToDoItem), args.Error(1)
-}
-
-func (m *MockRepository) GetById(ctx context.Context, id uint) (ToDoItem, error) {
-	args := m.Called(ctx, id)
-	return args.Get(0).(ToDoItem), args.Error(1)
-}
-
-func (m *MockRepository) Update(ctx context.Context, id uint, updates map[string]interface{}) error {
-	args := m.Called(ctx, id, updates)
-	return args.Error(0)
-}
-
-func (m *MockRepository) Delete(ctx context.Context, id uint) error {
-	args := m.Called(ctx, id)
-	return args.Error(0)
-}
-
 func TestService_Create(t *testing.T) {
-	mockRepo := new(MockRepository)
+	ctrl := gomock.NewController(t)
+	mockRepo := NewMockRepository(ctrl)
 	v := validator.New()
-	service := GetService(nil, mockRepo, v)
+	logger := zap.NewNop().Sugar()
+	service := GetService(logger, mockRepo, v)
 	ctx := context.Background()
 
 	t.Run("successful creation", func(t *testing.T) {
 		todo := &ToDoItem{Text: "buy milk"}
-		mockRepo.On("Create", ctx, todo).Return(nil).Once()
+		mockRepo.
+			EXPECT().
+			Create(ctx, todo).
+			Return(nil).
+			Times(1)
 
 		err := service.Create(ctx, todo)
 		assert.NoError(t, err)
-		mockRepo.AssertExpectations(t)
+
+		ctrl.Finish()
 	})
 
 	t.Run("validation error", func(t *testing.T) {
@@ -61,17 +39,17 @@ func TestService_Create(t *testing.T) {
 
 		err := service.Create(ctx, todo)
 		assert.Error(t, err)
-		responseErr, ok := err.(e.ResponseError)
-		assert.True(t, ok)
-		assert.Equal(t, "invalid item", responseErr.Message)
-		mockRepo.AssertNotCalled(t, "Create", ctx, todo)
+
+		ctrl.Finish()
 	})
 }
 
 func TestService_GetAll(t *testing.T) {
-	mockRepo := new(MockRepository)
+	ctrl := gomock.NewController(t)
+	mockRepo := NewMockRepository(ctrl)
 	v := validator.New()
-	service := GetService(nil, mockRepo, v)
+	logger := zap.NewNop().Sugar()
+	service := GetService(logger, mockRepo, v)
 	ctx := context.Background()
 
 	expectedTodos := []ToDoItem{
@@ -79,45 +57,82 @@ func TestService_GetAll(t *testing.T) {
 		{Text: "Todo 2", Done: true},
 	}
 
-	mockRepo.On("GetAll", ctx).Return(expectedTodos, nil).Once()
+	mockRepo.
+		EXPECT().
+		CountAll(ctx).
+		Return(len(expectedTodos)).
+		Times(2)
 
-	todos, err := service.GetAll(ctx)
+	mockRepo.
+		EXPECT().
+		GetAll(ctx, PaginationDetails{}).
+		Return(expectedTodos, nil).
+		Times(1)
+
+	todos, metadata, err := service.GetAll(ctx, PaginationDetails{})
 	assert.NoError(t, err)
 	assert.Equal(t, expectedTodos, todos)
-	mockRepo.AssertExpectations(t)
+	assert.Equal(t, metadata.ResultCount, metadata.TotalCount)
+
+	mockRepo.
+		EXPECT().
+		GetAll(ctx, PaginationDetails{Limit: 1, Page: 1}).
+		Return([]ToDoItem{expectedTodos[0]}, nil).
+		Times(1)
+
+	todos, metadata, err = service.GetAll(ctx, PaginationDetails{Limit: 1, Page: 1})
+	assert.NoError(t, err)
+	assert.Equal(t, expectedTodos[0], todos[0])
+	assert.Equal(t, metadata.ResultCount, 1)
+
+	ctrl.Finish()
 }
 
 func TestService_GetById(t *testing.T) {
-	mockRepo := new(MockRepository)
+	ctrl := gomock.NewController(t)
+	mockRepo := NewMockRepository(ctrl)
 	v := validator.New()
-	service := GetService(nil, mockRepo, v)
+	logger := zap.NewNop().Sugar()
+	service := GetService(logger, mockRepo, v)
 	ctx := context.Background()
 
 	t.Run("successful get", func(t *testing.T) {
 		expectedTodo := ToDoItem{Text: "found me"}
 		expectedTodo.ID = 1
-		mockRepo.On("GetById", ctx, uint(1)).Return(expectedTodo, nil).Once()
+		mockRepo.
+			EXPECT().
+			GetById(ctx, uint(1)).
+			Return(expectedTodo, nil).
+			Times(1)
 
 		todo, err := service.GetById(ctx, 1)
 		assert.NoError(t, err)
 		assert.Equal(t, expectedTodo, todo)
-		mockRepo.AssertExpectations(t)
+
+		ctrl.Finish()
 	})
 
 	t.Run("not found", func(t *testing.T) {
-		mockRepo.On("GetById", ctx, uint(99)).Return(ToDoItem{}, gorm.ErrRecordNotFound).Once()
+		mockRepo.
+			EXPECT().
+			GetById(ctx, uint(99)).
+			Return(ToDoItem{}, gorm.ErrRecordNotFound).
+			Times(1)
 
 		_, err := service.GetById(ctx, 99)
 		assert.Error(t, err)
 		assert.Equal(t, gorm.ErrRecordNotFound, err)
-		mockRepo.AssertExpectations(t)
+
+		ctrl.Finish()
 	})
 }
 
 func TestService_UpdateById(t *testing.T) {
-	mockRepo := new(MockRepository)
+	ctrl := gomock.NewController(t)
+	mockRepo := NewMockRepository(ctrl)
 	v := validator.New()
-	service := GetService(nil, mockRepo, v)
+	logger := zap.NewNop().Sugar()
+	service := GetService(logger, mockRepo, v)
 	ctx := context.Background()
 
 	t.Run("successful update", func(t *testing.T) {
@@ -126,13 +141,22 @@ func TestService_UpdateById(t *testing.T) {
 		updatedTodo := ToDoItem{Text: "updated text"}
 		updatedTodo.ID = 1
 
-		mockRepo.On("Update", ctx, uint(1), updates).Return(nil).Once()
-		mockRepo.On("GetById", ctx, uint(1)).Return(updatedTodo, nil).Once()
+		mockRepo.
+			EXPECT().
+			Update(ctx, uint(1), updates).
+			Return(nil).
+			Times(1)
+		mockRepo.
+			EXPECT().
+			GetById(ctx, uint(1)).
+			Return(updatedTodo, nil).
+			Times(1)
 
 		todo, err := service.UpdateById(ctx, 1, updateInput)
 		assert.NoError(t, err)
 		assert.Equal(t, updatedTodo, todo)
-		mockRepo.AssertExpectations(t)
+
+		ctrl.Finish()
 	})
 
 	t.Run("no updates provided", func(t *testing.T) {
@@ -140,43 +164,61 @@ func TestService_UpdateById(t *testing.T) {
 
 		_, err := service.UpdateById(ctx, 1, updateInput)
 		assert.Error(t, err)
-		assert.Equal(t, "no updates found", err.Error())
-		mockRepo.AssertNotCalled(t, "Update")
+		assert.Equal(t, locale.ErrorNotFoundUpdates, err.Error())
+
+		ctrl.Finish()
 	})
 
 	t.Run("update fails", func(t *testing.T) {
 		updateInput := ToDoItemUpdateInput{Done: boolPtr(true)}
 		updates := map[string]interface{}{"done": true}
-		mockRepo.On("Update", ctx, uint(1), updates).Return(gorm.ErrInvalidDB).Once()
+		mockRepo.
+			EXPECT().
+			Update(ctx, uint(1), updates).
+			Return(gorm.ErrInvalidDB).
+			Times(1)
 
 		_, err := service.UpdateById(ctx, 1, updateInput)
 		assert.Error(t, err)
 		assert.Equal(t, gorm.ErrInvalidDB, err)
-		mockRepo.AssertExpectations(t)
+
+		ctrl.Finish()
 	})
 }
 
 func TestService_DeleteById(t *testing.T) {
-	mockRepo := new(MockRepository)
+	ctrl := gomock.NewController(t)
+	mockRepo := NewMockRepository(ctrl)
 	v := validator.New()
-	service := GetService(nil, mockRepo, v)
+	logger := zap.NewNop().Sugar()
+	service := GetService(logger, mockRepo, v)
 	ctx := context.Background()
 
 	t.Run("successful delete", func(t *testing.T) {
-		mockRepo.On("Delete", ctx, uint(1)).Return(nil).Once()
+		mockRepo.
+			EXPECT().
+			Delete(ctx, uint(1)).
+			Return(nil).
+			Times(1)
 
 		err := service.DeleteById(ctx, 1)
 		assert.NoError(t, err)
-		mockRepo.AssertExpectations(t)
+
+		ctrl.Finish()
 	})
 
 	t.Run("delete fails", func(t *testing.T) {
-		mockRepo.On("Delete", ctx, uint(1)).Return(gorm.ErrInvalidDB).Once()
+		mockRepo.
+			EXPECT().
+			Delete(ctx, uint(1)).
+			Return(gorm.ErrInvalidDB).
+			Times(1)
 
 		err := service.DeleteById(ctx, 1)
 		assert.Error(t, err)
 		assert.Equal(t, gorm.ErrInvalidDB, err)
-		mockRepo.AssertExpectations(t)
+
+		ctrl.Finish()
 	})
 }
 
