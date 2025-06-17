@@ -1,7 +1,5 @@
 package errors
 
-var ResponseErrorNotFound = ResponseError{Message: "not found"}
-
 type ResponseError struct {
 	Message string `json:"error"`
 	Details string `json:"details"`

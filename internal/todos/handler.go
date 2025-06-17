@@ -1,7 +1,6 @@
 package todos
 
 import (
-	"errors"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -9,6 +8,7 @@ import (
 	"strconv"
 	"time"
 	e "todo-app/pkg/errors"
+	"todo-app/pkg/locale"
 )
 
 type EndpointHandler interface {
@@ -119,7 +119,7 @@ func (h *endpointHandler) getAll(ctx echo.Context) error {
 	if err != nil {
 		h.logger.Warn("could not read todo items", "error", err.Error())
 
-		return ctx.JSON(http.StatusInternalServerError, e.ResponseError{Message: "could not read todo-items"})
+		return ctx.JSON(http.StatusInternalServerError, e.ResponseError{Message: locale.ErrorCouldNotReadTodoItems})
 	}
 
 	return ctx.JSON(http.StatusOK, items)
@@ -133,14 +133,14 @@ func (h *endpointHandler) create(ctx echo.Context) error {
 	if err != nil {
 		h.logger.Warn("could not bind body to todo-item struct", "error", err.Error())
 
-		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: "could not read todo-item"})
+		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: locale.ErrorCouldNotReadTodoItem})
 	}
 
 	err = h.service.Create(ctx.Request().Context(), &item)
 	if err != nil {
 		h.logger.Warn("could not create todo-item", "error", err.Error())
 
-		return ctx.JSON(http.StatusBadRequest, err)
+		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: locale.ErrorInvalidTodoItem, Details: err.Error()})
 	}
 	h.logger.Infow("created todo item successfully")
 
@@ -155,23 +155,19 @@ func (h *endpointHandler) updateById(ctx echo.Context) error {
 	if err != nil {
 		h.logger.Warn("could not bind body to todo-item struct", "error", err.Error())
 
-		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: "could not read todo-item"})
+		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: locale.ErrorInvalidBody, Details: err.Error()})
 	}
 
 	id, err := h.getUrlId(ctx)
 	if err != nil {
 		h.logger.Warn("could not get id from url", "error", err.Error())
 
-		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: "invalid id"})
+		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: locale.ErrorInvalidID})
 	}
 
 	item, err := h.service.UpdateById(ctx.Request().Context(), id, itemInput)
 	if err != nil {
 		h.logger.Warn("could not update todo-item", "error", err.Error())
-
-		if errors.Is(err, e.ResponseErrorNotFound) {
-			return ctx.JSON(http.StatusNotFound, e.ResponseErrorNotFound)
-		}
 
 		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: err.Error()})
 	}
@@ -186,14 +182,14 @@ func (h *endpointHandler) deleteById(ctx echo.Context) error {
 	if err != nil {
 		h.logger.Warn("could not get id from url", "error", err.Error())
 
-		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: "invalid id"})
+		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: locale.ErrorInvalidID})
 	}
 
 	err = h.service.DeleteById(ctx.Request().Context(), id)
 	if err != nil {
 		h.logger.Warn("could not delete todo-item", "error", err.Error())
 
-		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: "could not delete todo-item"})
+		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: locale.ErrorCouldNotDelete, Details: err.Error()})
 	}
 
 	return ctx.JSON(http.StatusOK, "")

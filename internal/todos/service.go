@@ -4,9 +4,8 @@ import (
 	"context"
 	"errors"
 	"github.com/go-playground/validator/v10"
-	e "todo-app/pkg/errors"
-
 	"go.uber.org/zap"
+	"todo-app/pkg/locale"
 )
 
 type Service interface {
@@ -33,7 +32,7 @@ func GetService(logger *zap.SugaredLogger, repo Repository, validator *validator
 
 func (s *service) Create(ctx context.Context, item *ToDoItem) error {
 	if err := s.validator.Struct(item); err != nil {
-		return e.ResponseError{Message: "invalid item", Details: err.Error()}
+		return err
 	}
 
 	return s.repository.Create(ctx, item)
@@ -58,7 +57,7 @@ func (s *service) UpdateById(ctx context.Context, id uint, item ToDoItemUpdateIn
 	}
 
 	if len(updates) == 0 {
-		return ToDoItem{}, errors.New("no updates found")
+		return ToDoItem{}, errors.New(locale.ErrorNotFoundUpdates)
 	}
 
 	err := s.repository.Update(ctx, id, updates)
@@ -66,7 +65,12 @@ func (s *service) UpdateById(ctx context.Context, id uint, item ToDoItemUpdateIn
 		return ToDoItem{}, err
 	}
 
-	return s.repository.GetById(ctx, id)
+	updatedItem, err := s.repository.GetById(ctx, id)
+	if err != nil {
+		return ToDoItem{}, errors.New(locale.ErrorNotFoundRecord)
+	}
+
+	return updatedItem, nil
 }
 
 func (s *service) DeleteById(ctx context.Context, id uint) error {
