@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-	e "todo-app/internal/errors"
+	e "todo-app/pkg/errors"
 )
 
 type EndpointHandler interface {

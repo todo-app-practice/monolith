@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/go-playground/validator/v10"
-	e "todo-app/internal/errors"
+	e "todo-app/pkg/errors"
 
 	"go.uber.org/zap"
 )

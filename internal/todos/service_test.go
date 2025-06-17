@@ -3,7 +3,7 @@ package todos
 import (
 	"context"
 	"testing"
-	e "todo-app/internal/errors"
+	e "todo-app/pkg/errors"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
