@@ -3,80 +3,76 @@ package todos
 import (
 	"context"
 	"errors"
+	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
-	"gorm.io/gorm"
+	"todo-app/pkg/locale"
 )
 
 type Service interface {
 	Create(ctx context.Context, item *ToDoItem) error
 	GetAll(ctx context.Context) ([]ToDoItem, error)
+	GetById(ctx context.Context, id uint) (ToDoItem, error)
 	UpdateById(ctx context.Context, id uint, item ToDoItemUpdateInput) (ToDoItem, error)
 	DeleteById(ctx context.Context, id uint) error
 }
 
 type service struct {
-	logger *zap.SugaredLogger
-	db     *gorm.DB
+	logger     *zap.SugaredLogger
+	repository Repository
+	validator  *validator.Validate
 }
 
-func GetService(logger *zap.SugaredLogger, db *gorm.DB) Service {
+func GetService(logger *zap.SugaredLogger, repo Repository, validator *validator.Validate) Service {
 	return &service{
-		logger: logger,
-		db:     db,
+		logger:     logger,
+		repository: repo,
+		validator:  validator,
 	}
 }
 
 func (s *service) Create(ctx context.Context, item *ToDoItem) error {
-	result := s.db.WithContext(ctx).Create(item)
-	if result.Error != nil {
-		return result.Error
+	if err := s.validator.Struct(item); err != nil {
+		return err
 	}
 
-	return nil
+	return s.repository.Create(ctx, item)
 }
 
 func (s *service) GetAll(ctx context.Context) ([]ToDoItem, error) {
-	var items []ToDoItem
-	result := s.db.WithContext(ctx).Find(&items)
+	return s.repository.GetAll(ctx)
+}
 
-	if result.Error != nil {
-		return nil, result.Error
-	}
-
-	return items, nil
+func (s *service) GetById(ctx context.Context, id uint) (ToDoItem, error) {
+	return s.repository.GetById(ctx, id)
 }
 
 func (s *service) UpdateById(ctx context.Context, id uint, item ToDoItemUpdateInput) (ToDoItem, error) {
 	updates := map[string]interface{}{}
 
-	if item.Text != nil {
-		updates["text"] = item.Text
+	if item.Text != nil && *item.Text != "" {
+		updates["text"] = *item.Text
 	}
 	if item.Done != nil {
-		updates["done"] = item.Done
+		updates["done"] = *item.Done
 	}
 
 	if len(updates) == 0 {
-		return ToDoItem{}, errors.New("no updates found")
+		return ToDoItem{}, errors.New(locale.ErrorNotFoundUpdates)
 	}
 
-	result := s.db.WithContext(ctx).Model(&ToDoItem{}).Where("id = ?", id).Updates(updates)
-	if result.Error != nil {
-		return ToDoItem{}, result.Error
+	err := s.repository.Update(ctx, id, updates)
+	if err != nil {
+		return ToDoItem{}, err
 	}
 
-	var updatedItem ToDoItem
-
-	s.db.WithContext(ctx).First(&updatedItem, id)
+	updatedItem, err := s.repository.GetById(ctx, id)
+	if err != nil {
+		return ToDoItem{}, errors.New(locale.ErrorNotFoundRecord)
+	}
 
 	return updatedItem, nil
 }
 
 func (s *service) DeleteById(ctx context.Context, id uint) error {
-	result := s.db.WithContext(ctx).Delete(&ToDoItem{}, id)
-	if result.Error != nil {
-		return result.Error
-	}
-
-	return nil
+	return s.repository.Delete(ctx, id)
 }

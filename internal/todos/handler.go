@@ -1,12 +1,14 @@
 package todos
 
 import (
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"net/http"
 	"strconv"
 	"time"
-	"todo-app/internal/errors"
+	e "todo-app/pkg/errors"
+	"todo-app/pkg/locale"
 )
 
 type EndpointHandler interface {
@@ -14,9 +16,10 @@ type EndpointHandler interface {
 }
 
 type endpointHandler struct {
-	logger  *zap.SugaredLogger
-	service Service
-	e       *echo.Echo
+	logger    *zap.SugaredLogger
+	service   Service
+	e         *echo.Echo
+	validator *validator.Validate
 }
 
 type endpoint struct {
@@ -25,11 +28,17 @@ type endpoint struct {
 	Handler echo.HandlerFunc
 }
 
-func GetEndpointHandler(logger *zap.SugaredLogger, service Service, e *echo.Echo) EndpointHandler {
+func GetEndpointHandler(
+	logger *zap.SugaredLogger,
+	service Service,
+	e *echo.Echo,
+	validator *validator.Validate,
+) EndpointHandler {
 	return &endpointHandler{
-		logger:  logger,
-		service: service,
-		e:       e,
+		logger:    logger,
+		service:   service,
+		e:         e,
+		validator: validator,
 	}
 }
 
@@ -110,7 +119,7 @@ func (h *endpointHandler) getAll(ctx echo.Context) error {
 	if err != nil {
 		h.logger.Warn("could not read todo items", "error", err.Error())
 
-		return ctx.JSON(http.StatusInternalServerError, errors.ResponseError{Error: "could not read todo-items"})
+		return ctx.JSON(http.StatusInternalServerError, e.ResponseError{Message: locale.ErrorCouldNotReadTodoItems})
 	}
 
 	return ctx.JSON(http.StatusOK, items)
@@ -124,14 +133,14 @@ func (h *endpointHandler) create(ctx echo.Context) error {
 	if err != nil {
 		h.logger.Warn("could not bind body to todo-item struct", "error", err.Error())
 
-		return ctx.JSON(http.StatusBadRequest, errors.ResponseError{Error: "could not read todo-item"})
+		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: locale.ErrorCouldNotReadTodoItem})
 	}
 
 	err = h.service.Create(ctx.Request().Context(), &item)
 	if err != nil {
 		h.logger.Warn("could not create todo-item", "error", err.Error())
 
-		return ctx.JSON(http.StatusBadRequest, errors.ResponseError{Error: "could not create todo-item"})
+		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: locale.ErrorInvalidTodoItem, Details: err.Error()})
 	}
 	h.logger.Infow("created todo item successfully")
 
@@ -146,21 +155,21 @@ func (h *endpointHandler) updateById(ctx echo.Context) error {
 	if err != nil {
 		h.logger.Warn("could not bind body to todo-item struct", "error", err.Error())
 
-		return ctx.JSON(http.StatusBadRequest, errors.ResponseError{Error: "could not read todo-item"})
+		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: locale.ErrorInvalidBody, Details: err.Error()})
 	}
 
 	id, err := h.getUrlId(ctx)
 	if err != nil {
 		h.logger.Warn("could not get id from url", "error", err.Error())
 
-		return ctx.JSON(http.StatusBadRequest, errors.ResponseError{Error: "invalid id"})
+		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: locale.ErrorInvalidID})
 	}
 
 	item, err := h.service.UpdateById(ctx.Request().Context(), id, itemInput)
 	if err != nil {
 		h.logger.Warn("could not update todo-item", "error", err.Error())
 
-		return ctx.JSON(http.StatusBadRequest, errors.ResponseError{Error: "could not update todo-item"})
+		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: err.Error()})
 	}
 
 	return ctx.JSON(http.StatusOK, item)
@@ -173,14 +182,14 @@ func (h *endpointHandler) deleteById(ctx echo.Context) error {
 	if err != nil {
 		h.logger.Warn("could not get id from url", "error", err.Error())
 
-		return ctx.JSON(http.StatusBadRequest, errors.ResponseError{Error: "invalid id"})
+		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: locale.ErrorInvalidID})
 	}
 
 	err = h.service.DeleteById(ctx.Request().Context(), id)
 	if err != nil {
 		h.logger.Warn("could not delete todo-item", "error", err.Error())
 
-		return ctx.JSON(http.StatusBadRequest, errors.ResponseError{Error: "could not delete todo-item"})
+		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: locale.ErrorCouldNotDelete, Details: err.Error()})
 	}
 
 	return ctx.JSON(http.StatusOK, "")
