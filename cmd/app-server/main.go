@@ -45,7 +45,6 @@ func InitializeServer() {
 		logger,
 		todoService,
 		e,
-		v,
 	)
 
 	todoEndpointHandler.AddEndpoints()
