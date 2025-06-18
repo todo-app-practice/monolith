@@ -277,3 +277,58 @@ func TestHandler_UpdateById(t *testing.T) {
 		}
 	})
 }
+
+func TestHandler_DeleteById(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockService := NewMockService(ctrl)
+	e := echo.New()
+	logger := zap.NewNop().Sugar()
+	h := &endpointHandler{logger: logger, service: mockService, e: e}
+
+	t.Run("delete item", func(t *testing.T) {
+		id := 1
+		req := httptest.NewRequest(http.MethodDelete, "/todos/"+strconv.Itoa(id), nil)
+		rec := httptest.NewRecorder()
+		ctx := e.NewContext(req, rec)
+
+		ctx.SetPath("/todos/:id")
+		ctx.SetParamNames("id")
+		ctx.SetParamValues(strconv.Itoa(id))
+
+		mockService.
+			EXPECT().
+			DeleteById(ctx.Request().Context(), uint(id)).
+			Return(nil).
+			Times(1)
+
+		if assert.NoError(t, h.deleteById(ctx)) {
+			assert.Equal(t, http.StatusOK, rec.Code)
+
+			var response string
+			err := json.Unmarshal(rec.Body.Bytes(), &response)
+			assert.NoError(t, err)
+
+			assert.Equal(t, "", response)
+		}
+	})
+
+	t.Run("invalid id", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPut, "/todos/abc", nil)
+		rec := httptest.NewRecorder()
+		ctx := e.NewContext(req, rec)
+
+		ctx.SetPath("/todos/:id")
+		ctx.SetParamNames("id")
+		ctx.SetParamValues("abc")
+
+		if assert.NoError(t, h.updateById(ctx)) {
+			assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+			var responseError err.ResponseError
+			err := json.Unmarshal(rec.Body.Bytes(), &responseError)
+			assert.NoError(t, err)
+
+			assert.Equal(t, locale.ErrorInvalidID, responseError.Message)
+		}
+	})
+}
