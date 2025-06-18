@@ -4,10 +4,10 @@ go 1.24.3
 
 require (
 	github.com/go-playground/validator/v10 v10.26.0
-	github.com/golang/mock v1.6.0
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/labstack/gommon v0.4.2
 	github.com/stretchr/testify v1.10.0
+	go.uber.org/mock v0.5.2
 	go.uber.org/zap v1.27.0
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/gorm v1.30.0

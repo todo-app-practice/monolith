@@ -2,7 +2,7 @@ package todos
 
 import (
 	"context"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 	"testing"
 	"todo-app/pkg/locale"
