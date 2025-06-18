@@ -3,14 +3,15 @@ package app_server
 import (
 	"fmt"
 	"github.com/go-playground/validator/v10"
+	"os"
+	"todo-app/internal/todos"
+
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"os"
-	"todo-app/internal/todos"
 )
 
 var (
@@ -60,7 +61,12 @@ func InitializeServer() {
 }
 
 func initializeDb() error {
-	dbString := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", "root", "root", "mysql", "todo")
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbHost := os.Getenv("DB_HOST")
+	dbName := os.Getenv("DB_NAME")
+	dbString := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", dbUser, dbPassword, dbHost, dbName)
+
 	var err error
 	db, err = gorm.Open(mysql.Open(dbString), &gorm.Config{})
 	if err != nil {
