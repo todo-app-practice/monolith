@@ -2,16 +2,21 @@ package todos
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strconv"
 	"strings"
 	"testing"
+	"todo-app/pkg/locale"
+
+	err "todo-app/pkg/errors"
 )
 
 func TestHandler_Create(t *testing.T) {
@@ -24,7 +29,7 @@ func TestHandler_Create(t *testing.T) {
 		Done: false,
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/todos/", strings.NewReader(todoItemData))
+	req := httptest.NewRequest(http.MethodPost, "/todos", strings.NewReader(todoItemData))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
 	rec := httptest.NewRecorder()
@@ -75,7 +80,7 @@ func TestHandler_GetAll(t *testing.T) {
 	h := &endpointHandler{logger: logger, service: mockService, e: e}
 
 	t.Run("all items", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/todos/", nil)
+		req := httptest.NewRequest(http.MethodGet, "/todos", nil)
 
 		rec := httptest.NewRecorder()
 		ctx := e.NewContext(req, rec)
@@ -135,6 +140,140 @@ func TestHandler_GetAll(t *testing.T) {
 			assert.Equal(t, responseData.Data, todoItems[:2])
 			assert.Equal(t, responseData.Meta.ResultCount, 2)
 			assert.Equal(t, responseData.Meta.TotalCount, 3)
+		}
+	})
+}
+
+func TestHandler_UpdateById(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockService := NewMockService(ctrl)
+	e := echo.New()
+	logger := zap.NewNop().Sugar()
+	h := &endpointHandler{logger: logger, service: mockService, e: e}
+
+	t.Run("update item", func(t *testing.T) {
+		item := ToDoItem{
+			Model: gorm.Model{ID: 1},
+			Text:  "go for a run",
+			Done:  false,
+		}
+		itemBody := `{"text":"go for a walk"}`
+		updatedItem := ToDoItem{
+			Model: gorm.Model{ID: 1},
+			Text:  "go for a walk",
+			Done:  false,
+		}
+
+		updateInput := ToDoItemUpdateInput{
+			Text: stringPtr("go for a walk"),
+		}
+
+		req := httptest.NewRequest(http.MethodPut, "/todos/1", strings.NewReader(itemBody))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		ctx := e.NewContext(req, rec)
+
+		ctx.SetPath("/todos/:id")
+		ctx.SetParamNames("id")
+		ctx.SetParamValues("1")
+
+		mockService.
+			EXPECT().
+			UpdateById(ctx.Request().Context(), item.Model.ID, updateInput).
+			Return(updatedItem, nil).
+			Times(1)
+
+		if assert.NoError(t, h.updateById(ctx)) {
+			assert.Equal(t, http.StatusOK, rec.Code)
+
+			var responseItem ToDoItem
+			err := json.Unmarshal(rec.Body.Bytes(), &responseItem)
+			assert.NoError(t, err)
+
+			assert.Equal(t, updatedItem.Text, responseItem.Text)
+		}
+	})
+
+	t.Run("invalid id", func(t *testing.T) {
+		itemBody := `{"text":"go for a walk"}`
+
+		req := httptest.NewRequest(http.MethodPut, "/todos/abc", strings.NewReader(itemBody))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		ctx := e.NewContext(req, rec)
+
+		ctx.SetPath("/todos/:id")
+		ctx.SetParamNames("id")
+		ctx.SetParamValues("abc")
+
+		if assert.NoError(t, h.updateById(ctx)) {
+			assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+			var responseError err.ResponseError
+			err := json.Unmarshal(rec.Body.Bytes(), &responseError)
+			assert.NoError(t, err)
+
+			assert.Equal(t, locale.ErrorInvalidID, responseError.Message)
+		}
+	})
+
+	t.Run("no updates", func(t *testing.T) {
+		itemBody := `{"text": ""}`
+		item := ToDoItem{
+			Model: gorm.Model{ID: 1},
+			Text:  "go for a run",
+			Done:  false,
+		}
+		updateInput := ToDoItemUpdateInput{
+			Text: stringPtr(""),
+		}
+
+		req := httptest.NewRequest(http.MethodPut, "/todos/1", strings.NewReader(itemBody))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		ctx := e.NewContext(req, rec)
+
+		ctx.SetPath("/todos/:id")
+		ctx.SetParamNames("id")
+		ctx.SetParamValues("1")
+
+		mockService.
+			EXPECT().
+			UpdateById(ctx.Request().Context(), item.Model.ID, updateInput).
+			Return(ToDoItem{}, errors.New(locale.ErrorNotFoundUpdates)).
+			Times(1)
+
+		if assert.NoError(t, h.updateById(ctx)) {
+			assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+			var responseError err.ResponseError
+			err := json.Unmarshal(rec.Body.Bytes(), &responseError)
+			assert.NoError(t, err)
+
+			assert.Equal(t, locale.ErrorNotFoundUpdates, responseError.Message)
+		}
+	})
+
+	t.Run("invalid body", func(t *testing.T) {
+		itemBody := `{"text":123, "done": 23}`
+
+		req := httptest.NewRequest(http.MethodPut, "/todos/1", strings.NewReader(itemBody))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		ctx := e.NewContext(req, rec)
+
+		ctx.SetPath("/todos/:id")
+		ctx.SetParamNames("id")
+		ctx.SetParamValues("1")
+
+		if assert.NoError(t, h.updateById(ctx)) {
+			assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+			var responseError err.ResponseError
+			err := json.Unmarshal(rec.Body.Bytes(), &responseError)
+			assert.NoError(t, err)
+
+			assert.Equal(t, locale.ErrorInvalidBody, responseError.Message)
 		}
 	})
 }
