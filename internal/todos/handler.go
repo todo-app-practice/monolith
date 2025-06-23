@@ -99,6 +99,12 @@ func (h *endpointHandler) getUrlId(ctx echo.Context) (uint, error) {
 	return uint(id), nil
 }
 
+// @Summary Hello endpoint
+// @Description This endpoint returns a simple "hello world" message
+// @ID hello
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Router /hello [get]
 func (h *endpointHandler) hello(ctx echo.Context) error {
 	h.logger.Infow("testing zappy...",
 		"attempt", 3,

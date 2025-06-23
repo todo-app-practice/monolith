@@ -3,7 +3,9 @@ package app_server
 import (
 	"fmt"
 	"github.com/go-playground/validator/v10"
+	"github.com/swaggo/echo-swagger"
 	"os"
+	_ "todo-app/docs"
 	"todo-app/internal/todos"
 
 	"github.com/labstack/echo/v4"
@@ -49,6 +51,8 @@ func InitializeServer() {
 	)
 
 	todoEndpointHandler.AddEndpoints()
+
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	// adding all middlewares here
 	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{

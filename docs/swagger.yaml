@@ -1,0 +1,18 @@
+info:
+  contact: {}
+paths:
+  /hello:
+    get:
+      description: This endpoint returns a simple "hello world" message
+      operationId: hello
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Hello endpoint
+swagger: "2.0"
