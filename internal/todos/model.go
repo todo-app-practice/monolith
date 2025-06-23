@@ -1,13 +1,16 @@
 package todos
 
 import (
-	"gorm.io/gorm"
+	"time"
 )
 
 type ToDoItem struct {
-	gorm.Model
-	Text string `gorm:"not null" validate:"required"`
-	Done bool   `gorm:"default:false"`
+	ID        uint `gorm:"primarykey"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time `gorm:"index"`
+	Text      string     `gorm:"not null" validate:"required"`
+	Done      bool       `gorm:"default:false"`
 }
 
 type ToDoItemUpdateInput struct {
