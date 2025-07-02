@@ -11,6 +11,7 @@ require (
 	github.com/swaggo/swag v1.16.4
 	go.uber.org/mock v0.5.2
 	go.uber.org/zap v1.27.0
+	golang.org/x/crypto v0.39.0
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/gorm v1.30.0
 )
@@ -40,7 +41,6 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.39.0 // indirect
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.26.0 // indirect
