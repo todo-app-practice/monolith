@@ -1,23 +1,21 @@
 package users
 
 import (
-	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"strings"
 )
 
 type User struct {
 	gorm.Model
 	FirstName string `gorm:"not null" validate:"required"`
 	LastName  string `gorm:"not null" validate:"required"`
-	Email     string `gorm:"not null" validate:"required,email"`
+	Email     string `gorm:"type:varchar(40);uniqueIndex;not null" validate:"required,email"`
 	Password  string `gorm:"not null" validate:"required"`
 }
 
 // BeforeSave : hook before a user is saved
 func (u *User) BeforeSave(tx *gorm.DB) (err error) {
-	fmt.Println("before save")
-	fmt.Println(u.Password)
 	if u.Password != "" {
 		hash, err := hashPassword(u.Password)
 		if err != nil {
@@ -26,25 +24,30 @@ func (u *User) BeforeSave(tx *gorm.DB) (err error) {
 
 		u.Password = hash
 	}
+	if u.Email != "" {
+		u.Email = strings.ToLower(u.Email)
+	}
 
-	fmt.Println(u.Password)
 	return
 }
 
 // BeforeUpdate : hook before a user is updated
 func (u *User) BeforeUpdate(tx *gorm.DB) (err error) {
-	fmt.Println("before update")
-	fmt.Println(u.Password)
-	if u.Password != "" {
-		hash, err := hashPassword(u.Password)
+	updatesMap := tx.Statement.Dest.(map[string]any)
+
+	if tx.Statement.Changed("Password") {
+		hash, err := hashPassword(updatesMap["password"].(string))
 		if err != nil {
 			return nil
 		}
 
-		u.Password = hash
+		updatesMap["password"] = hash
 	}
 
-	fmt.Println(u.Password)
+	if tx.Statement.Changed("Email") {
+		updatesMap["email"] = strings.ToLower(updatesMap["email"].(string))
+	}
+
 	return
 }
 

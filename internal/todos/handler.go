@@ -5,15 +5,12 @@ import (
 	"strconv"
 	"time"
 	e "todo-app/pkg/errors"
+	"todo-app/pkg/handlers"
 	"todo-app/pkg/locale"
 
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 )
-
-type EndpointHandler interface {
-	AddEndpoints()
-}
 
 type endpointHandler struct {
 	logger  *zap.SugaredLogger
@@ -21,17 +18,11 @@ type endpointHandler struct {
 	e       *echo.Echo
 }
 
-type endpoint struct {
-	Method  string
-	Path    string
-	Handler echo.HandlerFunc
-}
-
 func GetEndpointHandler(
 	logger *zap.SugaredLogger,
 	service Service,
 	e *echo.Echo,
-) EndpointHandler {
+) handlers.EndpointHandler {
 	return &endpointHandler{
 		logger:  logger,
 		service: service,
@@ -40,7 +31,7 @@ func GetEndpointHandler(
 }
 
 func (h *endpointHandler) AddEndpoints() {
-	var endpoints = []endpoint{
+	var endpoints = []handlers.Endpoint{
 		{
 			Method:  http.MethodGet,
 			Path:    "/",
@@ -69,35 +60,8 @@ func (h *endpointHandler) AddEndpoints() {
 	}
 
 	for _, endpoint := range endpoints {
-		method(h.e, endpoint.Method, endpoint.Path, endpoint.Handler)
+		handlers.Method(h.e, endpoint.Method, endpoint.Path, endpoint.Handler)
 	}
-}
-
-func method(e *echo.Echo, method string, path string, handler echo.HandlerFunc) {
-	switch method {
-	case "GET":
-		e.GET(path, handler)
-	case "POST":
-		e.POST(path, handler)
-	case "PUT":
-		e.PUT(path, handler)
-	case "DELETE":
-		e.DELETE(path, handler)
-	default:
-		panic("unsupported method: " + method)
-	}
-}
-
-func (h *endpointHandler) getUrlId(ctx echo.Context) (uint, error) {
-	idString := ctx.Param("id")
-	id, err := strconv.ParseUint(idString, 10, 64)
-	if err != nil {
-		h.logger.Warn("could not parse id", "error", err.Error())
-
-		return 0, err
-	}
-
-	return uint(id), nil
 }
 
 // @Summary Hello endpoint
@@ -195,7 +159,7 @@ func (h *endpointHandler) updateById(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: locale.ErrorInvalidBody, Details: err.Error()})
 	}
 
-	id, err := h.getUrlId(ctx)
+	id, err := handlers.GetUrlId(ctx, h.logger)
 	if err != nil {
 		h.logger.Warn("could not get id from url", "error", err.Error())
 
@@ -223,7 +187,7 @@ func (h *endpointHandler) updateById(ctx echo.Context) error {
 func (h *endpointHandler) deleteById(ctx echo.Context) error {
 	h.logger.Infow("deleting todo item...")
 
-	id, err := h.getUrlId(ctx)
+	id, err := handlers.GetUrlId(ctx, h.logger)
 	if err != nil {
 		h.logger.Warn("could not get id from url", "error", err.Error())
 
