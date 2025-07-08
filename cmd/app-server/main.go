@@ -7,6 +7,7 @@ import (
 	"os"
 	_ "todo-app/docs"
 	"todo-app/internal/todos"
+	"todo-app/internal/users"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -39,18 +40,26 @@ func InitializeServer() {
 	logger.Info("initialized database")
 
 	todoRepository := todos.GetRepository(logger, db)
+	userRepository := users.GetRepository(logger, db)
 
 	v := validator.New()
 
 	todoService := todos.GetService(logger, todoRepository, v)
+	userService := users.GetService(logger, userRepository, v)
 
 	todoEndpointHandler := todos.GetEndpointHandler(
 		logger,
 		todoService,
 		e,
 	)
+	userEndpointHandler := users.GetEndpointHandler(
+		logger,
+		userService,
+		e,
+	)
 
 	todoEndpointHandler.AddEndpoints()
+	userEndpointHandler.AddEndpoints()
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
@@ -89,6 +98,11 @@ func initializeDb() error {
 
 func migrateDb() error {
 	err := db.AutoMigrate(&todos.ToDoItem{})
+	if err != nil {
+		return err
+	}
+	
+	err = db.AutoMigrate(&users.User{})
 	if err != nil {
 		return err
 	}

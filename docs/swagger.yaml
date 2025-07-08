@@ -46,9 +46,65 @@ definitions:
       text:
         type: string
     type: object
+  users.User:
+    properties:
+      createdAt:
+        type: string
+      deletedAt:
+        type: string
+      email:
+        type: string
+      firstName:
+        type: string
+      id:
+        type: integer
+      lastName:
+        type: string
+      password:
+        type: string
+      updatedAt:
+        type: string
+    required:
+    - email
+    - firstName
+    - lastName
+    - password
+    type: object
 info:
   contact: {}
 paths:
+  /create:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates a new user and returns the user details (excluding
+        the password)
+      operationId: create-user
+      parameters:
+      - description: User details
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/users.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.User'
+        "400":
+          description: Invalid user data
+          schema:
+            $ref: '#/definitions/errors.ResponseError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ResponseError'
+      summary: Create a new user
+      tags:
+      - users
   /hello:
     get:
       description: This endpoint returns a simple "hello world" message
@@ -92,6 +148,8 @@ paths:
           schema:
             $ref: '#/definitions/errors.ResponseError'
       summary: Get all todo items
+      tags:
+      - todos
     post:
       consumes:
       - application/json
@@ -116,6 +174,8 @@ paths:
           schema:
             $ref: '#/definitions/errors.ResponseError'
       summary: Create a new todo item
+      tags:
+      - todos
   /todos/{id}:
     delete:
       description: This endpoint deletes a todo item by its ID
@@ -138,6 +198,8 @@ paths:
           schema:
             $ref: '#/definitions/errors.ResponseError'
       summary: Delete a todo item by ID
+      tags:
+      - todos
     put:
       consumes:
       - application/json
@@ -167,4 +229,43 @@ paths:
           schema:
             $ref: '#/definitions/errors.ResponseError'
       summary: Update a todo item by ID
+      tags:
+      - todos
+  /update/{id}:
+    put:
+      consumes:
+      - application/json
+      description: This endpoint updates an existing user based on the provided ID
+        and returns the updated user details
+      operationId: update-user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated user details
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/users.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.User'
+        "400":
+          description: Invalid user data or ID
+          schema:
+            $ref: '#/definitions/errors.ResponseError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ResponseError'
+      summary: Update an existing user
+      tags:
+      - users
 swagger: "2.0"
