@@ -15,6 +15,53 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/create": {
+            "post": {
+                "description": "This endpoint creates a new user and returns the user details (excluding the password)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Create a new user",
+                "operationId": "create-user",
+                "parameters": [
+                    {
+                        "description": "User details",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/users.User"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/users.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid user data",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
         "/hello": {
             "get": {
                 "description": "This endpoint returns a simple \"hello world\" message",
@@ -41,6 +88,9 @@ const docTemplate = `{
                 "description": "This endpoint returns all todo items, with pagination",
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "todos"
                 ],
                 "summary": "Get all todo items",
                 "operationId": "getAll",
@@ -87,6 +137,9 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "todos"
+                ],
                 "summary": "Create a new todo item",
                 "operationId": "create",
                 "parameters": [
@@ -124,6 +177,9 @@ const docTemplate = `{
                 ],
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "todos"
                 ],
                 "summary": "Update a todo item by ID",
                 "operationId": "updateById",
@@ -165,6 +221,9 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "todos"
+                ],
                 "summary": "Delete a todo item by ID",
                 "operationId": "deleteById",
                 "parameters": [
@@ -185,6 +244,60 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ResponseError"
+                        }
+                    }
+                }
+            }
+        },
+        "/update/{id}": {
+            "put": {
+                "description": "This endpoint updates an existing user based on the provided ID and returns the updated user details",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update an existing user",
+                "operationId": "update-user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated user details",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/users.User"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/users.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid user data or ID",
+                        "schema": {
+                            "$ref": "#/definitions/errors.ResponseError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/errors.ResponseError"
                         }
@@ -263,6 +376,41 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "text": {
+                    "type": "string"
+                }
+            }
+        },
+        "users.User": {
+            "type": "object",
+            "required": [
+                "email",
+                "firstName",
+                "lastName",
+                "password"
+            ],
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "deletedAt": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "firstName": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "lastName": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "updatedAt": {
                     "type": "string"
                 }
             }

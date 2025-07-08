@@ -81,6 +81,7 @@ func (h *endpointHandler) hello(ctx echo.Context) error {
 
 // @Summary Get all todo items
 // @Description This endpoint returns all todo items, with pagination
+// @Tags todos
 // @ID getAll
 // @Produce json
 // @Param page query int false "Page number"
@@ -109,6 +110,7 @@ func (h *endpointHandler) getAll(ctx echo.Context) error {
 
 // @Summary Create a new todo item
 // @Description This endpoint creates a new todo item
+// @Tags todos
 // @ID create
 // @Accept json
 // @Produce json
@@ -140,6 +142,7 @@ func (h *endpointHandler) create(ctx echo.Context) error {
 
 // @Summary Update a todo item by ID
 // @Description This endpoint updates a todo item by its ID
+// @Tags todos
 // @ID updateById
 // @Accept json
 // @Produce json
@@ -178,6 +181,7 @@ func (h *endpointHandler) updateById(ctx echo.Context) error {
 
 // @Summary Delete a todo item by ID
 // @Description This endpoint deletes a todo item by its ID
+// @Tags todos
 // @ID deleteById
 // @Produce json
 // @Param id path int true "ToDo Item ID"
