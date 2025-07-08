@@ -27,7 +27,6 @@ func JWTMiddleware(authService Service, logger *zap.SugaredLogger) echo.Middlewa
 				return c.JSON(http.StatusUnauthorized, e.ResponseError{Message: locale.ErrorInvalidToken})
 			}
 
-			// Validate token
 			claims, err := authService.ValidateToken(tokenString)
 			if err != nil {
 				logger.Warnw("invalid token", "error", err.Error())
@@ -43,7 +42,6 @@ func JWTMiddleware(authService Service, logger *zap.SugaredLogger) echo.Middlewa
 	}
 }
 
-// GetUserIDFromContext extracts user ID from Echo context
 func GetUserIDFromContext(c echo.Context) uint {
 	userID, ok := c.Get("user_id").(uint)
 	if !ok {
@@ -52,7 +50,6 @@ func GetUserIDFromContext(c echo.Context) uint {
 	return userID
 }
 
-// GetUserEmailFromContext extracts user email from Echo context
 func GetUserEmailFromContext(c echo.Context) string {
 	email, ok := c.Get("user_email").(string)
 	if !ok {

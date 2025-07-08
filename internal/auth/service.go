@@ -40,7 +40,7 @@ func GetService(
 ) Service {
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		jwtSecret = "your-secret-key-change-this-in-production" // Default for development
+		jwtSecret = "password"
 	}
 
 	return &service{
@@ -49,7 +49,7 @@ func GetService(
 		authRepository:  authRepo,
 		validator:       validator,
 		jwtSecret:       []byte(jwtSecret),
-		tokenExpiration: 24 * time.Hour, // 24 hours
+		tokenExpiration: 20 * time.Minute,
 	}
 }
 
@@ -58,20 +58,17 @@ func (s *service) Login(ctx context.Context, req LoginRequest) (LoginResponse, e
 		return LoginResponse{}, err
 	}
 
-	// Find user by email
 	user, err := s.userRepository.GetByEmail(ctx, req.Email)
 	if err != nil {
 		s.logger.Warnw("user not found", "email", req.Email)
 		return LoginResponse{}, errors.New(locale.ErrorInvalidCredentials)
 	}
 
-	// Verify password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 		s.logger.Warnw("invalid password", "email", req.Email)
 		return LoginResponse{}, errors.New(locale.ErrorInvalidCredentials)
 	}
 
-	// Generate JWT token
 	expiresAt := time.Now().Add(s.tokenExpiration)
 	claims := JWTClaims{
 		UserID: user.ID,
@@ -90,14 +87,12 @@ func (s *service) Login(ctx context.Context, req LoginRequest) (LoginResponse, e
 		return LoginResponse{}, errors.New(locale.ErrorInternalServer)
 	}
 
-	// Generate refresh token
 	refreshToken, err := s.generateRefreshToken()
 	if err != nil {
 		s.logger.Errorw("failed to generate refresh token", "error", err)
 		return LoginResponse{}, errors.New(locale.ErrorInternalServer)
 	}
 
-	// Store refresh token in database
 	refreshTokenRecord := RefreshToken{
 		UserID:    user.ID,
 		Token:     refreshToken,
@@ -105,13 +100,14 @@ func (s *service) Login(ctx context.Context, req LoginRequest) (LoginResponse, e
 		IsRevoked: false,
 	}
 
-	if err := s.authRepository.CreateRefreshToken(ctx, &refreshTokenRecord); err != nil {
+	if err := s.authRepository.SaveRefreshToken(ctx, &refreshTokenRecord); err != nil {
 		s.logger.Errorw("failed to store refresh token", "error", err)
 		return LoginResponse{}, errors.New(locale.ErrorInternalServer)
 	}
 
 	return LoginResponse{
 		Token:     tokenString,
+		Refresh:   refreshToken,
 		ExpiresAt: expiresAt.Unix(),
 		User: UserInfo{
 			ID:        user.ID,
@@ -123,8 +119,6 @@ func (s *service) Login(ctx context.Context, req LoginRequest) (LoginResponse, e
 }
 
 func (s *service) Logout(ctx context.Context, token string) error {
-	// In a more sophisticated implementation, you might want to blacklist the token
-	// For now, we'll just revoke all refresh tokens for the user
 	claims, err := s.ValidateToken(token)
 	if err != nil {
 		return err
@@ -163,7 +157,6 @@ func (s *service) RefreshToken(ctx context.Context, refreshToken string) (LoginR
 		return LoginResponse{}, errors.New(locale.ErrorInvalidToken)
 	}
 
-	// Get user
 	user, err := s.userRepository.GetById(ctx, tokenRecord.UserID)
 	if err != nil {
 		return LoginResponse{}, errors.New(locale.ErrorUserNotFound)
@@ -190,6 +183,7 @@ func (s *service) RefreshToken(ctx context.Context, refreshToken string) (LoginR
 
 	return LoginResponse{
 		Token:     tokenString,
+		Refresh:   refreshToken,
 		ExpiresAt: expiresAt.Unix(),
 		User: UserInfo{
 			ID:        user.ID,

@@ -12,7 +12,6 @@ const (
 	ErrorCouldNotReadUser      = "error.could.not.read.user"
 	ErrorInvalidUser           = "error.invalid.user"
 
-	// Authentication related errors
 	ErrorInvalidCredentials  = "error.invalid.credentials"
 	ErrorInternalServer      = "error.internal.server"
 	ErrorInvalidToken        = "error.invalid.token"

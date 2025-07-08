@@ -43,8 +43,10 @@ func (r *repository) GetByEmail(ctx context.Context, email string) (User, error)
 	result := r.db.WithContext(ctx).Where("email = ?", email).First(&user)
 	if result.Error != nil {
 		r.logger.Errorw("failed to find user by email", "email", email, "error", result.Error)
+
 		return User{}, result.Error
 	}
+
 	return user, nil
 }
 

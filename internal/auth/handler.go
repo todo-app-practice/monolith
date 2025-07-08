@@ -55,13 +55,14 @@ func (h *endpointHandler) AddEndpoints() {
 
 // @Summary User login
 // @Description Authenticate user and return JWT token
+// @Tags auth
 // @ID login
 // @Accept json
 // @Produce json
 // @Param credentials body LoginRequest true "User credentials"
 // @Success 200 {object} LoginResponse
-// @Failure 400 {object} e.ResponseError "Bad Request"
-// @Failure 401 {object} e.ResponseError "Unauthorized"
+// @Failure 400 {object} errors.ResponseError "Bad Request"
+// @Failure 401 {object} errors.ResponseError "Unauthorized"
 // @Router /login [post]
 func (h *endpointHandler) login(ctx echo.Context) error {
 	h.logger.Infow("user login attempt...")
@@ -84,12 +85,13 @@ func (h *endpointHandler) login(ctx echo.Context) error {
 
 // @Summary User logout
 // @Description Logout user and revoke refresh tokens
+// @Tags auth
 // @ID logout
 // @Security BearerAuth
 // @Produce json
 // @Success 200 {string} string "Successfully logged out"
-// @Failure 400 {object} e.ResponseError "Bad Request"
-// @Failure 401 {object} e.ResponseError "Unauthorized"
+// @Failure 400 {object} errors.ResponseError "Bad Request"
+// @Failure 401 {object} errors.ResponseError "Unauthorized"
 // @Router /logout [post]
 func (h *endpointHandler) logout(ctx echo.Context) error {
 	h.logger.Infow("user logout...")
@@ -117,13 +119,14 @@ func (h *endpointHandler) logout(ctx echo.Context) error {
 
 // @Summary Refresh JWT token
 // @Description Refresh JWT token using refresh token
+// @Tags auth
 // @ID refresh
 // @Accept json
 // @Produce json
 // @Param refresh_token body map[string]string true "Refresh token"
 // @Success 200 {object} LoginResponse
-// @Failure 400 {object} e.ResponseError "Bad Request"
-// @Failure 401 {object} e.ResponseError "Unauthorized"
+// @Failure 400 {object} errors.ResponseError "Bad Request"
+// @Failure 401 {object} errors.ResponseError "Unauthorized"
 // @Router /refresh [post]
 func (h *endpointHandler) refresh(ctx echo.Context) error {
 	h.logger.Infow("token refresh attempt...")

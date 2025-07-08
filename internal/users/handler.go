@@ -84,6 +84,7 @@ func (h *endpointHandler) create(ctx echo.Context) error {
 // @Description This endpoint updates an existing user based on the provided ID and returns the updated user details
 // @Tags users
 // @ID update-user
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path int true "User ID"

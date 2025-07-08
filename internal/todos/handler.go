@@ -67,6 +67,7 @@ func (h *endpointHandler) AddEndpoints() {
 // @Summary Hello endpoint
 // @Description This endpoint returns a simple "hello world" message
 // @ID hello
+// @Security BearerAuth
 // @Produce json
 // @Success 200 {object} map[string]string
 // @Router /hello [get]
@@ -83,6 +84,7 @@ func (h *endpointHandler) hello(ctx echo.Context) error {
 // @Description This endpoint returns all todo items, with pagination
 // @Tags todos
 // @ID getAll
+// @Security BearerAuth
 // @Produce json
 // @Param page query int false "Page number"
 // @Param limit query int false "Number of items per page"
@@ -112,6 +114,7 @@ func (h *endpointHandler) getAll(ctx echo.Context) error {
 // @Description This endpoint creates a new todo item
 // @Tags todos
 // @ID create
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param todo body ToDoItem true "ToDo item to create"
@@ -144,6 +147,7 @@ func (h *endpointHandler) create(ctx echo.Context) error {
 // @Description This endpoint updates a todo item by its ID
 // @Tags todos
 // @ID updateById
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path int true "ToDo Item ID"
@@ -183,6 +187,7 @@ func (h *endpointHandler) updateById(ctx echo.Context) error {
 // @Description This endpoint deletes a todo item by its ID
 // @Tags todos
 // @ID deleteById
+// @Security BearerAuth
 // @Produce json
 // @Param id path int true "ToDo Item ID"
 // @Success 200 {string} string ""

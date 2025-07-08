@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 	_ "todo-app/docs"
@@ -17,7 +18,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
-	"github.com/swaggo/echo-swagger"
+	echoSwagger "github.com/swaggo/echo-swagger"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -61,22 +62,14 @@ func InitializeServer() {
 	userEndpointHandler := users.GetEndpointHandler(logger, userService, e)
 	authEndpointHandler := auth.GetEndpointHandler(logger, authService, e)
 
-	// Add public endpoints (no authentication required)
-	authEndpointHandler.AddEndpoints()
-
-	// Create JWT middleware
 	jwtMiddleware := auth.JWTMiddleware(authService, logger)
-
-	// Add protected endpoints with JWT middleware
-	//protectedTodoHandler := todos.GetEndpointHandler(logger, todoService, e)
-	//protectedUserHandler := users.GetEndpointHandler(logger, userService, e)
 
 	// Apply JWT middleware to protected routes
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			// Skip JWT validation for auth endpoints
 			path := c.Request().URL.Path
-			if path == "/login" || path == "/logout" || path == "/refresh" {
+			if path == "/login" || path == "/logout" || path == "/refresh" || path == "/user" || strings.Contains(path, "/swagger") {
 				return next(c)
 			}
 			// Apply JWT middleware for all other routes
@@ -86,6 +79,7 @@ func InitializeServer() {
 
 	todoEndpointHandler.AddEndpoints()
 	userEndpointHandler.AddEndpoints()
+	authEndpointHandler.AddEndpoints()
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 

@@ -1,4 +1,36 @@
 definitions:
+  auth.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  auth.LoginResponse:
+    properties:
+      expires_at:
+        type: integer
+      refresh_token:
+        type: string
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/auth.UserInfo'
+    type: object
+  auth.UserInfo:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: integer
+      last_name:
+        type: string
+    type: object
   errors.ResponseError:
     properties:
       details:
@@ -118,7 +150,97 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Hello endpoint
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return JWT token
+      operationId: login
+      parameters:
+      - description: User credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ResponseError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.ResponseError'
+      summary: User login
+      tags:
+      - auth
+  /logout:
+    post:
+      description: Logout user and revoke refresh tokens
+      operationId: logout
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully logged out
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ResponseError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.ResponseError'
+      security:
+      - BearerAuth: []
+      summary: User logout
+      tags:
+      - auth
+  /refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refresh JWT token using refresh token
+      operationId: refresh
+      parameters:
+      - description: Refresh token
+        in: body
+        name: refresh_token
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ResponseError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.ResponseError'
+      summary: Refresh JWT token
+      tags:
+      - auth
   /todos:
     get:
       description: This endpoint returns all todo items, with pagination
@@ -147,6 +269,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/errors.ResponseError'
+      security:
+      - BearerAuth: []
       summary: Get all todo items
       tags:
       - todos
@@ -173,6 +297,8 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/errors.ResponseError'
+      security:
+      - BearerAuth: []
       summary: Create a new todo item
       tags:
       - todos
@@ -197,6 +323,8 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/errors.ResponseError'
+      security:
+      - BearerAuth: []
       summary: Delete a todo item by ID
       tags:
       - todos
@@ -228,6 +356,8 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/errors.ResponseError'
+      security:
+      - BearerAuth: []
       summary: Update a todo item by ID
       tags:
       - todos
@@ -265,6 +395,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/errors.ResponseError'
+      security:
+      - BearerAuth: []
       summary: Update an existing user
       tags:
       - users
