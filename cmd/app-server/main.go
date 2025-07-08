@@ -1,14 +1,9 @@
 package app_server
 
 import (
-	"context"
 	"fmt"
-	"net/http"
 	"os"
-	"os/signal"
 	"strings"
-	"syscall"
-	"time"
 	_ "todo-app/docs"
 	"todo-app/internal/auth"
 	"todo-app/internal/todos"
@@ -89,41 +84,7 @@ func InitializeServer() {
 		LogLevel:  log.ERROR,
 	}))
 
-	// Start server in a goroutine
-	go func() {
-		if err := e.Start(":8765"); err != nil && err != http.ErrServerClosed {
-			logger.Fatalw("shutting down the server", "error", err)
-		}
-	}()
-
-	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 10 seconds.
-	// Use a buffered channel to avoid missing signals as recommended for signal.Notify
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-	<-quit
-	logger.Info("shutting down server...")
-
-	// The context is used to inform the server it has 10 seconds to finish
-	// the request it is currently handling
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if err := e.Shutdown(ctx); err != nil {
-		logger.Fatalw("server shutdown failed", "error", err)
-	}
-	logger.Info("server shut down")
-
-	logger.Info("closing database connection")
-	sqlDB, err := db.DB()
-	if err != nil {
-		logger.Errorw("failed to get underlying sql.DB", "error", err)
-	} else {
-		if err := sqlDB.Close(); err != nil {
-			logger.Errorw("failed to close database connection", "error", err)
-		} else {
-			logger.Info("database connection closed")
-		}
-	}
+	logger.Fatal(e.Start(":8765"))
 }
 
 func initializeDb() error {
