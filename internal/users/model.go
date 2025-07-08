@@ -10,7 +10,7 @@ type User struct {
 	gorm.Model
 	FirstName string `gorm:"not null" validate:"required"`
 	LastName  string `gorm:"not null" validate:"required"`
-	Email     string `gorm:"type:varchar(40);uniqueIndex;not null" validate:"required,email"`
+	Email     string `gorm:"type:varchar(255);uniqueIndex;not null" validate:"required,email"`
 	Password  string `gorm:"not null" validate:"required"`
 }
 
