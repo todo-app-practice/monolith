@@ -15,6 +15,7 @@ services:
       DB_PASSWORD: root
       DB_NAME: todo
       DB_HOST: mysql
+      JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
     depends_on:
       - mysql
     command: ["air"]
