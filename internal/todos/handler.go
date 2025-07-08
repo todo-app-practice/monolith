@@ -1,13 +1,14 @@
 package todos
 
 import (
-	"github.com/labstack/echo/v4"
-	"go.uber.org/zap"
 	"net/http"
 	"strconv"
 	"time"
 	e "todo-app/pkg/errors"
 	"todo-app/pkg/locale"
+
+	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 )
 
 type EndpointHandler interface {
@@ -99,6 +100,12 @@ func (h *endpointHandler) getUrlId(ctx echo.Context) (uint, error) {
 	return uint(id), nil
 }
 
+// @Summary Hello endpoint
+// @Description This endpoint returns a simple "hello world" message
+// @ID hello
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Router /hello [get]
 func (h *endpointHandler) hello(ctx echo.Context) error {
 	h.logger.Infow("testing zappy...",
 		"attempt", 3,
@@ -108,6 +115,16 @@ func (h *endpointHandler) hello(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, map[string]string{"hello": "world"})
 }
 
+// @Summary Get all todo items
+// @Description This endpoint returns all todo items, with pagination
+// @ID getAll
+// @Produce json
+// @Param page query int false "Page number"
+// @Param limit query int false "Number of items per page"
+// @Param order query string false "Order of items in relation to Done"
+// @Success 200 {object} PaginatedResponse
+// @Failure 500 {object} errors.ResponseError "Internal Server Error"
+// @Router /todos [get]
 func (h *endpointHandler) getAll(ctx echo.Context) error {
 	h.logger.Infow("reading todo item...")
 	details := PaginationDetails{}
@@ -126,6 +143,15 @@ func (h *endpointHandler) getAll(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, PaginatedResponse{Data: items, Meta: metadata})
 }
 
+// @Summary Create a new todo item
+// @Description This endpoint creates a new todo item
+// @ID create
+// @Accept json
+// @Produce json
+// @Param todo body ToDoItem true "ToDo item to create"
+// @Success 200 {object} ToDoItem
+// @Failure 400 {object} errors.ResponseError "Bad Request"
+// @Router /todos [post]
 func (h *endpointHandler) create(ctx echo.Context) error {
 	h.logger.Infow("creating todo item...")
 
@@ -148,6 +174,16 @@ func (h *endpointHandler) create(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, item)
 }
 
+// @Summary Update a todo item by ID
+// @Description This endpoint updates a todo item by its ID
+// @ID updateById
+// @Accept json
+// @Produce json
+// @Param id path int true "ToDo Item ID"
+// @Param todo body ToDoItemUpdateInput true "ToDo item update data"
+// @Success 200 {object} ToDoItem
+// @Failure 400 {object} errors.ResponseError "Bad Request"
+// @Router /todos/{id} [put]
 func (h *endpointHandler) updateById(ctx echo.Context) error {
 	h.logger.Infow("updating todo item...")
 
@@ -176,6 +212,14 @@ func (h *endpointHandler) updateById(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, item)
 }
 
+// @Summary Delete a todo item by ID
+// @Description This endpoint deletes a todo item by its ID
+// @ID deleteById
+// @Produce json
+// @Param id path int true "ToDo Item ID"
+// @Success 200 {string} string ""
+// @Failure 400 {object} errors.ResponseError "Bad Request"
+// @Router /todos/{id} [delete]
 func (h *endpointHandler) deleteById(ctx echo.Context) error {
 	h.logger.Infow("deleting todo item...")
 

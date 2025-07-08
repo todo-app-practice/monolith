@@ -1,0 +1,170 @@
+definitions:
+  errors.ResponseError:
+    properties:
+      details:
+        type: string
+      error:
+        type: string
+    type: object
+  todos.PaginatedResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/todos.ToDoItem'
+        type: array
+      metadata:
+        $ref: '#/definitions/todos.PaginationMetadata'
+    type: object
+  todos.PaginationMetadata:
+    properties:
+      resultCount:
+        type: integer
+      totalCount:
+        type: integer
+    type: object
+  todos.ToDoItem:
+    properties:
+      createdAt:
+        type: string
+      deletedAt:
+        type: string
+      done:
+        type: boolean
+      id:
+        type: integer
+      text:
+        type: string
+      updatedAt:
+        type: string
+    required:
+    - text
+    type: object
+  todos.ToDoItemUpdateInput:
+    properties:
+      done:
+        type: boolean
+      text:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /hello:
+    get:
+      description: This endpoint returns a simple "hello world" message
+      operationId: hello
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Hello endpoint
+  /todos:
+    get:
+      description: This endpoint returns all todo items, with pagination
+      operationId: getAll
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Order of items in relation to Done
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/todos.PaginatedResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.ResponseError'
+      summary: Get all todo items
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates a new todo item
+      operationId: create
+      parameters:
+      - description: ToDo item to create
+        in: body
+        name: todo
+        required: true
+        schema:
+          $ref: '#/definitions/todos.ToDoItem'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/todos.ToDoItem'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ResponseError'
+      summary: Create a new todo item
+  /todos/{id}:
+    delete:
+      description: This endpoint deletes a todo item by its ID
+      operationId: deleteById
+      parameters:
+      - description: ToDo Item ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ResponseError'
+      summary: Delete a todo item by ID
+    put:
+      consumes:
+      - application/json
+      description: This endpoint updates a todo item by its ID
+      operationId: updateById
+      parameters:
+      - description: ToDo Item ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ToDo item update data
+        in: body
+        name: todo
+        required: true
+        schema:
+          $ref: '#/definitions/todos.ToDoItemUpdateInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/todos.ToDoItem'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.ResponseError'
+      summary: Update a todo item by ID
+swagger: "2.0"
