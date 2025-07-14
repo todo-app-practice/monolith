@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
-	"gorm.io/gorm"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -153,15 +152,15 @@ func TestHandler_UpdateById(t *testing.T) {
 
 	t.Run("update item", func(t *testing.T) {
 		item := ToDoItem{
-			Model: gorm.Model{ID: 1},
-			Text:  "go for a run",
-			Done:  false,
+			ID:   1,
+			Text: "go for a run",
+			Done: false,
 		}
 		itemBody := `{"text":"go for a walk"}`
 		updatedItem := ToDoItem{
-			Model: gorm.Model{ID: 1},
-			Text:  "go for a walk",
-			Done:  false,
+			ID:   1,
+			Text: "go for a walk",
+			Done: false,
 		}
 
 		updateInput := ToDoItemUpdateInput{
@@ -179,7 +178,7 @@ func TestHandler_UpdateById(t *testing.T) {
 
 		mockService.
 			EXPECT().
-			UpdateById(ctx.Request().Context(), item.Model.ID, updateInput).
+			UpdateById(ctx.Request().Context(), item.ID, updateInput).
 			Return(updatedItem, nil).
 			Times(1)
 
@@ -220,9 +219,9 @@ func TestHandler_UpdateById(t *testing.T) {
 	t.Run("no updates", func(t *testing.T) {
 		itemBody := `{"text": ""}`
 		item := ToDoItem{
-			Model: gorm.Model{ID: 1},
-			Text:  "go for a run",
-			Done:  false,
+			ID:   1,
+			Text: "go for a run",
+			Done: false,
 		}
 		updateInput := ToDoItemUpdateInput{
 			Text: stringPtr(""),
@@ -239,7 +238,7 @@ func TestHandler_UpdateById(t *testing.T) {
 
 		mockService.
 			EXPECT().
-			UpdateById(ctx.Request().Context(), item.Model.ID, updateInput).
+			UpdateById(ctx.Request().Context(), item.ID, updateInput).
 			Return(ToDoItem{}, errors.New(locale.ErrorNotFoundUpdates)).
 			Times(1)
 
