@@ -79,3 +79,68 @@ func TestService_Login(t *testing.T) {
 		ctrl.Finish()
 	})
 }
+
+func TestService_Logout(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockAuthRepo := NewMockRepository(ctrl)
+	mockUserRepo := users.NewMockRepository(ctrl)
+	v := validator.New()
+	logger := zap.NewNop().Sugar()
+	service := GetService(logger, mockUserRepo, mockAuthRepo, v)
+	ctx := context.Background()
+
+	password := "test"
+	userPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	user := users.User{
+		ID:        1,
+		Email:     "test@test.com",
+		FirstName: "test",
+		LastName:  "test",
+		Password:  string(userPassword),
+	}
+
+	t.Run("successful logout", func(t *testing.T) {
+		mockUserRepo.
+			EXPECT().
+			GetByEmail(ctx, user.Email).
+			Return(user, nil).
+			Times(1)
+
+		mockAuthRepo.
+			EXPECT().
+			SaveRefreshToken(ctx, gomock.Any()).
+			Return(nil).
+			Times(1)
+
+		loginRequest := LoginRequest{
+			Email:    user.Email,
+			Password: password,
+		}
+
+		response, err := service.Login(ctx, loginRequest)
+		assert.NoError(t, err)
+		assert.Equal(t, user.FirstName, response.User.FirstName)
+		assert.Equal(t, user.LastName, response.User.LastName)
+		assert.Equal(t, user.Email, response.User.Email)
+
+		mockAuthRepo.
+			EXPECT().
+			RevokeRefreshTokensByUserID(ctx, user.ID).
+			Return(nil).
+			Times(1)
+
+		err = service.Logout(ctx, response.Token)
+
+		assert.NoError(t, err)
+
+		ctrl.Finish()
+	})
+
+	t.Run("failed logout", func(t *testing.T) {
+		err := service.Logout(ctx, "invalid_token")
+
+		assert.Error(t, err)
+
+		ctrl.Finish()
+	})
+}
