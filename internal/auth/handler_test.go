@@ -61,6 +61,24 @@ func TestHandler_Login(t *testing.T) {
 
 		ctrl.Finish()
 	})
+
+	t.Run("invalid login request", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(`asdkj[=-()&**96`))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+
+		rec := httptest.NewRecorder()
+		ctx := e.NewContext(req, rec)
+
+		logger := zap.NewNop().Sugar()
+		h := &endpointHandler{logger: logger, service: mockService, e: e}
+
+		if assert.NoError(t, h.login(ctx)) {
+			assert.Equal(t, http.StatusBadRequest, rec.Code)
+			assert.Contains(t, rec.Body.String(), locale.ErrorInvalidBody)
+		}
+
+		ctrl.Finish()
+	})
 }
 
 func TestHandler_Logout(t *testing.T) {
@@ -127,5 +145,72 @@ func TestHandler_Logout(t *testing.T) {
 		}
 
 		ctrl.Finish()
+	})
+}
+
+func TestHandler_RefreshToken(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockService := NewMockService(ctrl)
+	e := echo.New()
+
+	t.Run("success refresh token request", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/refresh", strings.NewReader(`{"refresh_token": "valid_token"}`))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+
+		rec := httptest.NewRecorder()
+		ctx := e.NewContext(req, rec)
+
+		logger := zap.NewNop().Sugar()
+		h := &endpointHandler{logger: logger, service: mockService, e: e}
+
+		loginResponse := LoginResponse{
+			User: UserInfo{
+				FirstName: "ez",
+				LastName:  "pz",
+				Email:     "go",
+			},
+		}
+
+		mockService.
+			EXPECT().
+			RefreshToken(ctx.Request().Context(), "valid_token").
+			Return(loginResponse, nil).
+			Times(1)
+
+		if assert.NoError(t, h.refresh(ctx)) {
+			assert.Equal(t, http.StatusOK, rec.Code)
+		}
+	})
+
+	t.Run("missing refresh token request", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/refresh", strings.NewReader(``))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+
+		rec := httptest.NewRecorder()
+		ctx := e.NewContext(req, rec)
+
+		logger := zap.NewNop().Sugar()
+		h := &endpointHandler{logger: logger, service: mockService, e: e}
+
+		if assert.NoError(t, h.refresh(ctx)) {
+			assert.Equal(t, http.StatusBadRequest, rec.Code)
+			assert.Contains(t, rec.Body.String(), locale.ErrorMissingRefreshToken)
+		}
+	})
+
+	t.Run("invalid refresh token request", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/refresh", strings.NewReader(`-ajs87&*`))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+
+		rec := httptest.NewRecorder()
+		ctx := e.NewContext(req, rec)
+
+		logger := zap.NewNop().Sugar()
+		h := &endpointHandler{logger: logger, service: mockService, e: e}
+
+		if assert.NoError(t, h.refresh(ctx)) {
+			assert.Equal(t, http.StatusBadRequest, rec.Code)
+			assert.Contains(t, rec.Body.String(), locale.ErrorInvalidBody)
+		}
 	})
 }
