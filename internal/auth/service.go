@@ -40,7 +40,7 @@ func GetService(
 ) Service {
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		jwtSecret = "password"
+		jwtSecret = "test"
 	}
 
 	return &service{
@@ -67,6 +67,11 @@ func (s *service) Login(ctx context.Context, req LoginRequest) (LoginResponse, e
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 		s.logger.Warnw("invalid password", "email", req.Email)
 		return LoginResponse{}, errors.New(locale.ErrorInvalidCredentials)
+	}
+
+	if user.IsEmailVerified == false {
+		s.logger.Warnw("email not verified", "email", req.Email)
+		return LoginResponse{}, errors.New(locale.ErrorEmailUnverified)
 	}
 
 	expiresAt := time.Now().Add(s.tokenExpiration)

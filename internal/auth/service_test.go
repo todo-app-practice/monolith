@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/go-playground/validator/v10"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
@@ -33,17 +34,11 @@ func TestService_Login(t *testing.T) {
 		Password:  string(userPassword),
 	}
 
-	t.Run("successful login", func(t *testing.T) {
+	t.Run("email not verified login", func(t *testing.T) {
 		mockUserRepo.
 			EXPECT().
 			GetByEmail(ctx, user.Email).
 			Return(user, nil).
-			Times(1)
-
-		mockAuthRepo.
-			EXPECT().
-			SaveRefreshToken(ctx, gomock.Any()).
-			Return(nil).
 			Times(1)
 
 		loginRequest := LoginRequest{
@@ -52,10 +47,9 @@ func TestService_Login(t *testing.T) {
 		}
 
 		response, err := service.Login(ctx, loginRequest)
-		assert.NoError(t, err)
-		assert.Equal(t, user.FirstName, response.User.FirstName)
-		assert.Equal(t, user.LastName, response.User.LastName)
-		assert.Equal(t, user.Email, response.User.Email)
+		assert.Error(t, err)
+		assert.Equal(t, LoginResponse{}, response)
+		assert.Contains(t, err.Error(), locale.ErrorEmailUnverified)
 
 		ctrl.Finish()
 	})
@@ -101,28 +95,18 @@ func TestService_Logout(t *testing.T) {
 	}
 
 	t.Run("successful logout", func(t *testing.T) {
-		mockUserRepo.
-			EXPECT().
-			GetByEmail(ctx, user.Email).
-			Return(user, nil).
-			Times(1)
-
-		mockAuthRepo.
-			EXPECT().
-			SaveRefreshToken(ctx, gomock.Any()).
-			Return(nil).
-			Times(1)
-
-		loginRequest := LoginRequest{
-			Email:    user.Email,
-			Password: password,
+		claims := JWTClaims{
+			UserID: user.ID,
+			Email:  user.Email,
+			RegisteredClaims: jwt.RegisteredClaims{
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+				IssuedAt:  jwt.NewNumericDate(time.Now()),
+				Issuer:    "todo-app",
+			},
 		}
 
-		response, err := service.Login(ctx, loginRequest)
-		assert.NoError(t, err)
-		assert.Equal(t, user.FirstName, response.User.FirstName)
-		assert.Equal(t, user.LastName, response.User.LastName)
-		assert.Equal(t, user.Email, response.User.Email)
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		tokenString, err := token.SignedString([]byte("test"))
 
 		mockAuthRepo.
 			EXPECT().
@@ -130,7 +114,7 @@ func TestService_Logout(t *testing.T) {
 			Return(nil).
 			Times(1)
 
-		err = service.Logout(ctx, response.Token)
+		err = service.Logout(ctx, tokenString)
 
 		assert.NoError(t, err)
 
