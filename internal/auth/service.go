@@ -40,7 +40,7 @@ func GetService(
 ) Service {
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		jwtSecret = "password"
+		jwtSecret = "test"
 	}
 
 	return &service{
