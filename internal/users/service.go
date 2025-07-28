@@ -98,6 +98,13 @@ func (s *service) Update(ctx context.Context, user *User) (User, error) {
 
 	if actualUser.Email != user.Email {
 		updates["email"] = user.Email
+
+		verificationToken := uuid.New().String()
+		expiryTime := time.Now().Add(24 * time.Hour)
+
+		updates["email_verification_token"] = verificationToken
+		updates["email_verification_expiry"] = &expiryTime
+		updates["is_email_verified"] = false
 	}
 	if actualUser.FirstName != user.FirstName {
 		updates["first_name"] = user.FirstName
@@ -116,6 +123,13 @@ func (s *service) Update(ctx context.Context, user *User) (User, error) {
 	err = s.repository.Update(ctx, user.ID, updates)
 	if err != nil {
 		return User{}, err
+	}
+
+	if val, ok := updates["email_verification_token"]; ok {
+		err = s.emailService.SendVerificationEmail(user.Email, user.FirstName, val.(string))
+		if err != nil {
+			s.logger.Errorw("failed to send verification email", "error", err, "email", user.Email)
+		}
 	}
 
 	updatedUser, err := s.repository.GetById(ctx, user.ID)
