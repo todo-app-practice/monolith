@@ -137,6 +137,5 @@ func (s *service) Update(ctx context.Context, user *User) (User, error) {
 		return User{}, errors.New(locale.ErrorNotFoundRecord)
 	}
 
-	updatedUser.Password = ""
 	return updatedUser, nil
 }

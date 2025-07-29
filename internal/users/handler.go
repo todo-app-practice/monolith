@@ -193,5 +193,6 @@ func (h *endpointHandler) update(ctx echo.Context) error {
 	}
 	h.logger.Infow("updated user successfully")
 
+	user.Password = ""
 	return ctx.JSON(http.StatusOK, user)
 }
