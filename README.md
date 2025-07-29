@@ -9,6 +9,7 @@ A modern, containerized Todo application built with Go, featuring a RESTful API 
 - Structured logging with Zap
 - Hot-reload development environment with Air
 - Docker containerization
+- Swagger for API documentation
 - Makefile for easy development workflow
 
 ## Prerequisites
@@ -33,14 +34,13 @@ A modern, containerized Todo application built with Go, featuring a RESTful API 
 
 3. The application will be available at:
    - API Server: http://localhost:8765
+   - Swagger UI: http://localhost:8765/swagger/index.html
    - MySQL Database: localhost:3306
 
 ## API Documentation
 
-Detailed API documentation is available in each internal domain package.
+Detailed API documentation is available through the Swagger UI.
 It includes available endpoints, request / response formats, data models, error handling.
-
-ToDo Items - [read here](internal/todos/API.md)
 
 ## Development
 
@@ -54,6 +54,12 @@ The project includes several Makefile commands to help with development:
 To follow logs for a specific service:
 ```bash
 make logs srv=todo-app
+```
+- `make gen-mocks src="mock_source.go"`
+
+To generate mock for the users package repository:
+```bash
+make gen-mocks src=internal/users/repository.go
 ```
 
 ### Debugging
@@ -75,6 +81,7 @@ This application includes email verification functionality for user registration
 - The account is not active until the email is verified
 - Verification tokens expire after 24 hours
 - Users can verify their email by clicking the link in the email or visiting `/verify-email?token=<token>`
+- Users have to verify their email every time they update it
 
 ### Mailpit Integration
 The application uses Mailpit for email testing in development:
@@ -100,7 +107,7 @@ docker-compose up
 # The application will be available at:
 # - API: http://localhost:8765
 # - Mailpit UI: http://localhost:8025
-# - Swagger: http://localhost:8765/swagger/
+# - Swagger: http://localhost:8765/swagger/index.html
 ```
 
 ### Testing Email Verification
