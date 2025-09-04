@@ -164,8 +164,9 @@ func getVerificationHTML(title, message string, success bool) string {
 // @Param user body User true "Updated user details"
 // @Success 200 {object} User
 // @Failure 400 {object} errors.ResponseError "Invalid user data or ID"
+// @Failure 401 {object} errors.ResponseError "Unauthorized"
 // @Failure 500 {object} errors.ResponseError "Internal server error"
-// @Router /update/{id} [put]
+// @Router /user/{id} [put]
 func (h *endpointHandler) update(ctx echo.Context) error {
 	h.logger.Infow("updating user...")
 

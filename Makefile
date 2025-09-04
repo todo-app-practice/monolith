@@ -24,3 +24,6 @@ gen-mocks:
 	pkg=$$(basename $$dir); \
 	echo "Generating mock: src=$$src dest=$$dest pkg=$$pkg"; \
 	mockgen -source=$$src -destination=$$dest -package=$$pkg
+
+gen-docs:
+	swag init -g auth/handler.go -d ./internal/ -o ./docs --parseInternal --parseDependency

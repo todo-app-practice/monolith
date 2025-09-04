@@ -42,7 +42,7 @@ func JWTMiddleware(authService Service, logger *zap.SugaredLogger) echo.Middlewa
 	}
 }
 
-func GetUserIDFromContext(c echo.Context) uint {
+func GetUserIdFromContext(c echo.Context) uint {
 	userID, ok := c.Get("user_id").(uint)
 	if !ok {
 		return 0

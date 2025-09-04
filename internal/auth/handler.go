@@ -1,6 +1,9 @@
 package auth
 
 import (
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	e "todo-app/pkg/errors"
@@ -45,6 +48,16 @@ func (h *endpointHandler) AddEndpoints() {
 			Method:  http.MethodPost,
 			Path:    "/refresh",
 			Handler: h.refresh,
+		},
+		{
+			Method:  http.MethodGet,
+			Path:    "/auth/google/login",
+			Handler: h.googleLogin,
+		},
+		{
+			Method:  http.MethodGet,
+			Path:    "/auth/google/callback",
+			Handler: h.googleCallback,
 		},
 	}
 
@@ -150,4 +163,55 @@ func (h *endpointHandler) refresh(ctx echo.Context) error {
 
 	h.logger.Infow("token refreshed successfully")
 	return ctx.JSON(http.StatusOK, response)
+}
+
+// @Summary Google OAuth login
+// @Description Redirects user to Google OAuth for authentication
+// @Tags auth
+// @ID google-login
+// @Produce json
+// @Success 302 {string} string "Redirect to Google OAuth"
+// @Router /auth/google/login [get]
+func (h *endpointHandler) googleLogin(ctx echo.Context) error {
+	url := h.service.GoogleLogin(ctx.Request().Context(), "state-string") // State should be random
+	return ctx.Redirect(http.StatusTemporaryRedirect, url)
+}
+
+// @Summary Google OAuth callback
+// @Description Handles the callback from Google OAuth and redirects to frontend with tokens
+// @Tags auth
+// @ID google-callback
+// @Produce json
+// @Param code query string true "Authorization code from Google"
+// @Param state query string false "State parameter for CSRF protection"
+// @Success 302 {string} string "Redirect to frontend with tokens"
+// @Failure 400 {string} string "Invalid authorization code"
+// @Router /auth/google/callback [get]
+func (h *endpointHandler) googleCallback(ctx echo.Context) error {
+	code := ctx.QueryParam("code")
+	// You should also verify the 'state' query param here against the one you stored
+	response, err := h.service.GoogleCallback(ctx.Request().Context(), code)
+	if err != nil {
+		h.logger.Warnw("google callback failed", "error", err.Error())
+		// Redirect to a frontend error page
+		return ctx.Redirect(http.StatusTemporaryRedirect, "/login?error=google-failed")
+	}
+
+	// On success, we need to send the tokens and user data to the frontend.
+	userJSON, err := json.Marshal(response.User)
+	if err != nil {
+		h.logger.Errorw("failed to marshal user data", "error", err)
+		return ctx.Redirect(http.StatusTemporaryRedirect, "/login?error=internal-error")
+	}
+	userBase64 := base64.URLEncoding.EncodeToString(userJSON)
+
+	frontendURL := "http://localhost:5173" // This should be an env var in a real app
+	redirectURL := fmt.Sprintf(
+		"%s/login/success?token=%s&refresh=%s&user=%s",
+		frontendURL,
+		response.Token,
+		response.Refresh,
+		userBase64,
+	)
+	return ctx.Redirect(http.StatusTemporaryRedirect, redirectURL)
 }
