@@ -27,9 +27,6 @@ const LoginPage = () => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    window.location.href = '/auth/google/login';
-  };
 
   return (
     <Container maxWidth="xs">
@@ -74,7 +71,7 @@ const LoginPage = () => {
           </Button>
           <Button
             component="a"
-            href="/auth/google/login"
+            href="/api/auth/google/login"
             fullWidth
             variant="outlined"
             sx={{ mt: 1, mb: 2 }}
