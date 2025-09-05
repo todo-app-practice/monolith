@@ -100,7 +100,6 @@ func (h *endpointHandler) getAll(ctx echo.Context) error {
 
 	userId := auth.GetUserIdFromContext(ctx)
 	if userId == 0 {
-		// This case should ideally not be reached if JWT middleware is correctly applied
 		return ctx.JSON(http.StatusUnauthorized, e.ResponseError{Message: "Unauthorized"})
 	}
 

@@ -42,7 +42,6 @@ func (s *service) Create(ctx context.Context, item *ToDoItem) error {
 func (s *service) GetAllForUser(ctx context.Context, userId uint, details PaginationDetails) ([]ToDoItem, PaginationMetadata, error) {
 	s.logger.Infow("get all todos", "details", details)
 
-	// Correctly receive all three values returned by the repository.
 	items, metadata, err := s.repository.GetAllForUser(ctx, userId, details)
 	if err != nil {
 		return nil, PaginationMetadata{}, err

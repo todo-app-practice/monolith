@@ -14,7 +14,7 @@ type Repository interface {
 	Update(ctx context.Context, id uint, updates map[string]interface{}) error
 	Delete(ctx context.Context, id uint) error
 	CountAll(ctx context.Context) int
-	GetAllForUser(ctx context.Context, userID uint, details PaginationDetails) ([]ToDoItem, PaginationMetadata, error)
+	GetAllForUser(ctx context.Context, userId uint, details PaginationDetails) ([]ToDoItem, PaginationMetadata, error)
 }
 
 type repository struct {
