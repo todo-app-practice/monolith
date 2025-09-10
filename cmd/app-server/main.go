@@ -2,6 +2,7 @@ package app_server
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	_ "todo-app/docs"
@@ -61,17 +62,25 @@ func InitializeServer() {
 
 	jwtMiddleware := auth.JWTMiddleware(authService, logger)
 
-	// Apply JWT middleware to protected routes, but not in tests
+	// Apply JWT middleware to protected routes
 	if os.Getenv("APP_ENV") != "test" {
 		e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 			return func(c echo.Context) error {
-				// Skip JWT validation for auth endpoints
 				path := c.Request().URL.Path
-				if path == "/login" || path == "/logout" || path == "/refresh" || path == "/user" ||
-					path == "/verify-email" || strings.Contains(path, "/swagger") {
+				method := c.Request().Method
+
+				// Public routes that do not require authentication
+				isPublicRoute := (method == http.MethodPost && path == "/user") ||
+					path == "/login" ||
+					path == "/verify-email" ||
+					strings.HasPrefix(path, "/auth/google/") ||
+					strings.Contains(path, "/swagger")
+
+				if isPublicRoute {
 					return next(c)
 				}
-				// Apply JWT middleware for all other routes
+
+				// Apply JWT middleware for all other protected routes
 				return jwtMiddleware(next)(c)
 			}
 		})

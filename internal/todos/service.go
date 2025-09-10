@@ -3,9 +3,10 @@ package todos
 import (
 	"context"
 	"errors"
+	"todo-app/pkg/locale"
+
 	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
-	"todo-app/pkg/locale"
 )
 
 type Service interface {
@@ -41,15 +42,12 @@ func (s *service) Create(ctx context.Context, item *ToDoItem) error {
 func (s *service) GetAllForUser(ctx context.Context, userId uint, details PaginationDetails) ([]ToDoItem, PaginationMetadata, error) {
 	s.logger.Infow("get all todos", "details", details)
 
-	items, err := s.repository.GetAllForUser(ctx, userId, details)
-
+	items, metadata, err := s.repository.GetAllForUser(ctx, userId, details)
 	if err != nil {
 		return nil, PaginationMetadata{}, err
 	}
 
-	totalCount := s.repository.CountAll(ctx)
-
-	return items, PaginationMetadata{TotalCount: totalCount, ResultCount: len(items)}, nil
+	return items, metadata, nil
 }
 
 func (s *service) GetById(ctx context.Context, id uint) (ToDoItem, error) {

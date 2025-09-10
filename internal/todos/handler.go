@@ -8,6 +8,8 @@ import (
 	"todo-app/pkg/handlers"
 	"todo-app/pkg/locale"
 
+	"todo-app/internal/auth"
+
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 )
@@ -70,7 +72,7 @@ func (h *endpointHandler) AddEndpoints() {
 // @Security BearerAuth
 // @Produce json
 // @Success 200 {object} map[string]string
-// @Router /hello [get]
+// @Router / [get]
 func (h *endpointHandler) hello(ctx echo.Context) error {
 	h.logger.Infow("testing zappy...",
 		"attempt", 3,
@@ -90,11 +92,17 @@ func (h *endpointHandler) hello(ctx echo.Context) error {
 // @Param limit query int false "Number of items per page"
 // @Param order query string false "Order of items in relation to Done"
 // @Success 200 {object} PaginatedResponse
+// @Failure 401 {object} errors.ResponseError "Unauthorized"
 // @Failure 500 {object} errors.ResponseError "Internal Server Error"
 // @Router /todos [get]
 func (h *endpointHandler) getAll(ctx echo.Context) error {
 	h.logger.Infow("reading todo item...")
-	userId := ctx.Get("user_id").(uint)
+
+	userId := auth.GetUserIdFromContext(ctx)
+	if userId == 0 {
+		return ctx.JSON(http.StatusUnauthorized, e.ResponseError{Message: "Unauthorized"})
+	}
+
 	details := PaginationDetails{}
 
 	details.Page, _ = strconv.Atoi(ctx.QueryParam("page"))
@@ -121,6 +129,7 @@ func (h *endpointHandler) getAll(ctx echo.Context) error {
 // @Param todo body ToDoItem true "ToDo item to create"
 // @Success 200 {object} ToDoItem
 // @Failure 400 {object} errors.ResponseError "Bad Request"
+// @Failure 401 {object} errors.ResponseError "Unauthorized"
 // @Router /todos [post]
 func (h *endpointHandler) create(ctx echo.Context) error {
 	h.logger.Infow("creating todo item...")
@@ -134,7 +143,7 @@ func (h *endpointHandler) create(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: locale.ErrorCouldNotReadTodoItem})
 	}
 
-	item.UserID = userId
+	item.UserId = userId
 
 	err = h.service.Create(ctx.Request().Context(), &item)
 	if err != nil {
@@ -158,6 +167,7 @@ func (h *endpointHandler) create(ctx echo.Context) error {
 // @Param todo body ToDoItemUpdateInput true "ToDo item update data"
 // @Success 200 {object} ToDoItem
 // @Failure 400 {object} errors.ResponseError "Bad Request"
+// @Failure 401 {object} errors.ResponseError "Unauthorized"
 // @Router /todos/{id} [put]
 func (h *endpointHandler) updateById(ctx echo.Context) error {
 	h.logger.Infow("updating todo item...")
@@ -176,7 +186,7 @@ func (h *endpointHandler) updateById(ctx echo.Context) error {
 
 		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: locale.ErrorCouldNotReadTodoItem})
 	}
-	if item.UserID != userId {
+	if item.UserId != userId {
 		h.logger.Info("user tried to modify todo of other user")
 
 		return ctx.JSON(http.StatusUnauthorized, e.ResponseError{Message: locale.ErrorNotFoundRecord})
@@ -209,6 +219,7 @@ func (h *endpointHandler) updateById(ctx echo.Context) error {
 // @Param id path int true "ToDo Item ID"
 // @Success 200 {string} string ""
 // @Failure 400 {object} errors.ResponseError "Bad Request"
+// @Failure 401 {object} errors.ResponseError "Unauthorized"
 // @Router /todos/{id} [delete]
 func (h *endpointHandler) deleteById(ctx echo.Context) error {
 	h.logger.Infow("deleting todo item...")
@@ -227,7 +238,7 @@ func (h *endpointHandler) deleteById(ctx echo.Context) error {
 
 		return ctx.JSON(http.StatusBadRequest, e.ResponseError{Message: locale.ErrorCouldNotReadTodoItem})
 	}
-	if item.UserID != userId {
+	if item.UserId != userId {
 		h.logger.Info("user tried to delete todo of other user")
 
 		return ctx.JSON(http.StatusUnauthorized, e.ResponseError{Message: locale.ErrorNotFoundRecord})

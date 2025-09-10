@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { Container, Box, TextField, Button, Typography, Alert, CircularProgress } from '@mui/material';
 import { useState } from 'react';
+import GoogleIcon from '@mui/icons-material/Google';
 
 const LoginPage = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
@@ -25,6 +26,7 @@ const LoginPage = () => {
       setLoading(false);
     }
   };
+
 
   return (
     <Container maxWidth="xs">
@@ -66,6 +68,16 @@ const LoginPage = () => {
             disabled={loading}
           >
             {loading ? <CircularProgress size={24} /> : 'Sign In'}
+          </Button>
+          <Button
+            component="a"
+            href="/api/auth/google/login"
+            fullWidth
+            variant="outlined"
+            sx={{ mt: 1, mb: 2 }}
+            startIcon={<GoogleIcon />}
+          >
+            Sign In with Google
           </Button>
           <Typography variant="body2" align="center">
             {"Don't have an account? "}

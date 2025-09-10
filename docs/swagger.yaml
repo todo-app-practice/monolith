@@ -38,6 +38,14 @@ definitions:
       error:
         type: string
     type: object
+  gorm.DeletedAt:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
+    type: object
   todos.PaginatedResponse:
     properties:
       data:
@@ -59,7 +67,7 @@ definitions:
       createdAt:
         type: string
       deletedAt:
-        type: string
+        $ref: '#/definitions/gorm.DeletedAt'
       done:
         type: boolean
       id:
@@ -68,6 +76,8 @@ definitions:
         type: string
       updatedAt:
         type: string
+      userId:
+        type: integer
     required:
     - text
     type: object
@@ -83,13 +93,19 @@ definitions:
       createdAt:
         type: string
       deletedAt:
-        type: string
+        $ref: '#/definitions/gorm.DeletedAt'
       email:
+        type: string
+      emailVerificationExpiry:
+        type: string
+      emailVerificationToken:
         type: string
       firstName:
         type: string
       id:
         type: integer
+      isEmailVerified:
+        type: boolean
       lastName:
         type: string
       password:
@@ -105,38 +121,6 @@ definitions:
 info:
   contact: {}
 paths:
-  /create:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint creates a new user and returns the user details (excluding
-        the password)
-      operationId: create-user
-      parameters:
-      - description: User details
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/users.User'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/users.User'
-        "400":
-          description: Invalid user data
-          schema:
-            $ref: '#/definitions/errors.ResponseError'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/errors.ResponseError'
-      summary: Create a new user
-      tags:
-      - users
   /hello:
     get:
       description: This endpoint returns a simple "hello world" message
@@ -398,6 +382,67 @@ paths:
       security:
       - BearerAuth: []
       summary: Update an existing user
+      tags:
+      - users
+  /user:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates a new user and sends an email verification
+        link
+      operationId: create-user
+      parameters:
+      - description: User details
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/users.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.User'
+        "400":
+          description: Invalid user data
+          schema:
+            $ref: '#/definitions/errors.ResponseError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/errors.ResponseError'
+      summary: Create a new user
+      tags:
+      - users
+  /verify-email:
+    get:
+      description: This endpoint verifies a user's email address using the verification
+        token
+      operationId: verify-email
+      parameters:
+      - description: Email verification token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: Email verified successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid or expired token
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Verify email address
       tags:
       - users
 swagger: "2.0"

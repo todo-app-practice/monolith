@@ -10,7 +10,6 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type Service interface {
@@ -111,9 +110,6 @@ func (s *service) Update(ctx context.Context, user *User) (User, error) {
 	}
 	if actualUser.LastName != user.LastName {
 		updates["last_name"] = user.LastName
-	}
-	if bcrypt.CompareHashAndPassword([]byte(actualUser.Password), []byte(user.Password)) != nil {
-		updates["password"] = user.Password
 	}
 
 	if len(updates) == 0 {

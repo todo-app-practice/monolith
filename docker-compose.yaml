@@ -21,6 +21,10 @@ services:
       SMTP_USER: ""
       SMTP_PASSWORD: ""
       APP_URL: "http://localhost:8765"
+      # These will be loaded from the .env file
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URL: "http://localhost:8765/auth/google/callback"
     depends_on:
       - mysql
       - mailpit

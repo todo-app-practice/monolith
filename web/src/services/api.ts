@@ -2,7 +2,7 @@ import axios from 'axios';
 import { camelCase, mapKeys, isObject, isArray, map, mapValues } from 'lodash';
 
 // A truly recursive function to convert all keys in an object or array of objects.
-const convertKeysToPascalCase = (data: any): any => {
+export const convertKeysToPascalCase = (data: any): any => {
   if (isArray(data)) {
     return map(data, convertKeysToPascalCase);
   }

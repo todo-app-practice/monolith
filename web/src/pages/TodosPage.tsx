@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import type { Todo } from '../types';
 import {
   Container, Box, TextField, Button, Typography, List, ListItem, ListItemText, Checkbox, IconButton, CircularProgress, Alert
@@ -11,6 +12,7 @@ const TodosPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newTodoText, setNewTodoText] = useState('');
+  const { user } = useAuth();
 
   const fetchTodos = async () => {
     try {
@@ -31,8 +33,16 @@ const TodosPage = () => {
   const handleAddTodo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTodoText.trim()) return;
+    if (!user) {
+      setError('User not authenticated');
+      return;
+    }
+    
     try {
-      const { data } = await api.post('/todos', { text: newTodoText });
+      const { data } = await api.post('/todos', { 
+        text: newTodoText,
+        userId: user.Id
+      });
       setTodos([...todos, data]);
       setNewTodoText('');
     } catch (err: any) {
