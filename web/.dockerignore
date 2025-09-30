@@ -1,6 +1,0 @@
-# Ignore local dependencies and other unnecessary files that should not be in the container
-node_modules
-dist
-.cache
-npm-debug.log
-.DS_Store 

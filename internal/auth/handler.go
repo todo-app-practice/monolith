@@ -36,17 +36,17 @@ func (h *endpointHandler) AddEndpoints() {
 	var endpoints = []handlers.Endpoint{
 		{
 			Method:  http.MethodPost,
-			Path:    "/login",
+			Path:    "/auth/login",
 			Handler: h.login,
 		},
 		{
 			Method:  http.MethodPost,
-			Path:    "/logout",
+			Path:    "/auth/logout",
 			Handler: h.logout,
 		},
 		{
 			Method:  http.MethodPost,
-			Path:    "/refresh",
+			Path:    "/auth/refresh",
 			Handler: h.refresh,
 		},
 		{

@@ -43,7 +43,7 @@ func (h *endpointHandler) AddEndpoints() {
 		},
 		{
 			Method:  http.MethodGet,
-			Path:    "/verify-email",
+			Path:    "/user/verify-email",
 			Handler: h.verifyEmail,
 		},
 	}

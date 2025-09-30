@@ -53,18 +53,6 @@ services:
     volumes:
       - mailpit_data:/data
 
-  web:
-    build: ./web
-    container_name: todo-web
-    working_dir: /app
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./web:/app
-      - /app/node_modules
-    depends_on:
-      - todo-app
-
 volumes:
   mysql_data:
   mailpit_data:
