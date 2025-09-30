@@ -7,7 +7,7 @@ RUN apk add --no-cache curl
 
 COPY . .
 
-RUN go install github.com/air-verse/air@latest
+RUN go install github.com/air-verse/air@v1.62.0
 
 RUN go install github.com/go-delve/delve/cmd/dlv@latest
 
