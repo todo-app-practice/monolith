@@ -98,12 +98,13 @@ func (mr *MockRepositoryMockRecorder) GetAll(ctx, details any) *gomock.Call {
 }
 
 // GetAllForUser mocks base method.
-func (m *MockRepository) GetAllForUser(ctx context.Context, userId uint, details PaginationDetails) ([]ToDoItem, error) {
+func (m *MockRepository) GetAllForUser(ctx context.Context, userId uint, details PaginationDetails) ([]ToDoItem, PaginationMetadata, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllForUser", ctx, userId, details)
 	ret0, _ := ret[0].([]ToDoItem)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(PaginationMetadata)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // GetAllForUser indicates an expected call of GetAllForUser.

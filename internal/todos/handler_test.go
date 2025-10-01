@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -87,11 +88,11 @@ func TestHandler_GetAll(t *testing.T) {
 
 		rec := httptest.NewRecorder()
 		ctx := e.NewContext(req, rec)
-		ctx.Set("user_id", uint(0))
+		ctx.Set("user_id", uint(1))
 
 		mockService.
 			EXPECT().
-			GetAllForUser(ctx.Request().Context(), uint(0), PaginationDetails{}).
+			GetAllForUser(ctx.Request().Context(), uint(1), PaginationDetails{}).
 			Return(todoItems, PaginationMetadata{
 				ResultCount: len(todoItems),
 				TotalCount:  len(todoItems),
@@ -124,11 +125,11 @@ func TestHandler_GetAll(t *testing.T) {
 
 		rec := httptest.NewRecorder()
 		ctx := e.NewContext(req, rec)
-		ctx.Set("user_id", uint(0))
+		ctx.Set("user_id", uint(1))
 
 		mockService.
 			EXPECT().
-			GetAllForUser(ctx.Request().Context(), uint(0), paginationDetails).
+			GetAllForUser(ctx.Request().Context(), uint(1), paginationDetails).
 			Return(todoItems[:2], PaginationMetadata{
 				ResultCount: 2,
 				TotalCount:  3,
@@ -159,13 +160,17 @@ func TestHandler_UpdateById(t *testing.T) {
 
 	t.Run("update item", func(t *testing.T) {
 		item := ToDoItem{
-			ID:   1,
+			Model: gorm.Model{
+				ID: 1,
+			},
 			Text: "go for a run",
 			Done: false,
 		}
 		itemBody := `{"text":"go for a walk"}`
 		updatedItem := ToDoItem{
-			ID:   1,
+			Model: gorm.Model{
+				ID: 1,
+			},
 			Text: "go for a walk",
 			Done: false,
 		}
@@ -234,7 +239,9 @@ func TestHandler_UpdateById(t *testing.T) {
 	t.Run("no updates", func(t *testing.T) {
 		itemBody := `{"text": ""}`
 		item := ToDoItem{
-			ID:   1,
+			Model: gorm.Model{
+				ID: 1,
+			},
 			Text: "go for a run",
 			Done: false,
 		}
@@ -277,7 +284,9 @@ func TestHandler_UpdateById(t *testing.T) {
 
 	t.Run("invalid body", func(t *testing.T) {
 		item := ToDoItem{
-			ID:   1,
+			Model: gorm.Model{
+				ID: 1,
+			},
 			Text: "123",
 		}
 		itemBody := `{"text":123, "done": 23}`
@@ -322,7 +331,7 @@ func TestHandler_DeleteById(t *testing.T) {
 		userId := uint(0)
 		id := 1
 		item := ToDoItem{
-			UserID: userId,
+			UserId: userId,
 		}
 		req := httptest.NewRequest(http.MethodDelete, "/todos/"+strconv.Itoa(id), nil)
 		rec := httptest.NewRecorder()

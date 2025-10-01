@@ -9,6 +9,7 @@ import (
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 	"testing"
 	"time"
 	"todo-app/internal/users"
@@ -27,7 +28,9 @@ func TestService_Login(t *testing.T) {
 	password := "test"
 	userPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	user := users.User{
-		ID:        1,
+		Model: gorm.Model{
+			ID: 1,
+		},
 		Email:     "test@test.com",
 		FirstName: "test",
 		LastName:  "test",
@@ -87,7 +90,9 @@ func TestService_Logout(t *testing.T) {
 	password := "test"
 	userPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	user := users.User{
-		ID:        1,
+		Model: gorm.Model{
+			ID: 1,
+		},
 		Email:     "test@test.com",
 		FirstName: "test",
 		LastName:  "test",
@@ -148,7 +153,9 @@ func TestService_RefreshToken(t *testing.T) {
 		}
 
 		user := users.User{
-			ID:        1,
+			Model: gorm.Model{
+				ID: 1,
+			},
 			Email:     "test@test.com",
 			FirstName: "first test",
 			LastName:  "last test",

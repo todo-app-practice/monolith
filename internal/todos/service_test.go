@@ -60,14 +60,11 @@ func TestService_GetAll(t *testing.T) {
 
 	mockRepo.
 		EXPECT().
-		CountAll(ctx).
-		Return(len(expectedTodos)).
-		Times(2)
-
-	mockRepo.
-		EXPECT().
 		GetAllForUser(ctx, userId, PaginationDetails{}).
-		Return(expectedTodos, nil).
+		Return(expectedTodos, PaginationMetadata{
+			ResultCount: 2,
+			TotalCount:  2,
+		}, nil).
 		Times(1)
 
 	todos, metadata, err := service.GetAllForUser(ctx, userId, PaginationDetails{})
@@ -78,7 +75,10 @@ func TestService_GetAll(t *testing.T) {
 	mockRepo.
 		EXPECT().
 		GetAllForUser(ctx, userId, PaginationDetails{Limit: 1, Page: 1}).
-		Return([]ToDoItem{expectedTodos[0]}, nil).
+		Return([]ToDoItem{expectedTodos[0]}, PaginationMetadata{
+			ResultCount: 1,
+			TotalCount:  2,
+		}, nil).
 		Times(1)
 
 	todos, metadata, err = service.GetAllForUser(ctx, userId, PaginationDetails{Limit: 1, Page: 1})

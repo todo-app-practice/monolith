@@ -3,6 +3,7 @@ package users
 import (
 	"encoding/json"
 	"errors"
+	"gorm.io/gorm"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -175,13 +176,17 @@ func TestHandler_Update(t *testing.T) {
 	t.Run("success update user", func(t *testing.T) {
 		userData := `{"firstName":"Jane","lastName":"Smith","email":"jane.smith@example.com"}`
 		inputUser := User{
-			ID:        1,
+			Model: gorm.Model{
+				ID: 1,
+			},
 			FirstName: "Jane",
 			LastName:  "Smith",
 			Email:     "jane.smith@example.com",
 		}
 		updatedUser := User{
-			ID:        1,
+			Model: gorm.Model{
+				ID: 1,
+			},
 			FirstName: "Jane",
 			LastName:  "Smith",
 			Email:     "jane.smith@example.com",
@@ -267,7 +272,9 @@ func TestHandler_Update(t *testing.T) {
 	t.Run("service error", func(t *testing.T) {
 		userData := `{"firstName":"Jane","lastName":"Smith","email":"jane.smith@example.com"}`
 		inputUser := User{
-			ID:        1,
+			Model: gorm.Model{
+				ID: 1,
+			},
 			FirstName: "Jane",
 			LastName:  "Smith",
 			Email:     "jane.smith@example.com",
@@ -335,7 +342,9 @@ func TestHandler_Update(t *testing.T) {
 		ctx.SetParamValues("0")
 
 		inputUser := User{
-			ID:        0,
+			Model: gorm.Model{
+				ID: 0,
+			},
 			FirstName: "Jane",
 			LastName:  "Smith",
 			Email:     "jane.smith@example.com",

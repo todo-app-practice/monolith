@@ -7,6 +7,7 @@ import (
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 	"testing"
 	"time"
 	"todo-app/pkg/email"
@@ -60,7 +61,9 @@ func TestService_Update(t *testing.T) {
 	pw, _ := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
 
 	user := User{
-		ID:        1,
+		Model: gorm.Model{
+			ID: 1,
+		},
 		Email:     "test@test.com",
 		Password:  string(pw),
 		FirstName: "test",
@@ -69,7 +72,9 @@ func TestService_Update(t *testing.T) {
 
 	t.Run("update successfully", func(t *testing.T) {
 		updatedUser := User{
-			ID:        1,
+			Model: gorm.Model{
+				ID: 1,
+			},
 			Email:     "test1@test.com",
 			Password:  "password",
 			FirstName: "new_test",
@@ -114,7 +119,9 @@ func TestService_Update(t *testing.T) {
 
 	t.Run("no updates found", func(t *testing.T) {
 		updatedUser := User{
-			ID:        1,
+			Model: gorm.Model{
+				ID: 1,
+			},
 			Email:     "test@test.com",
 			Password:  "password",
 			FirstName: "test",
@@ -151,7 +158,9 @@ func TestService_VerifyEmail(t *testing.T) {
 	ctx := context.Background()
 
 	user := User{
-		ID:        1,
+		Model: gorm.Model{
+			ID: 1,
+		},
 		Email:     "test@test.com",
 		Password:  "password",
 		FirstName: "test",
