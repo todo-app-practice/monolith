@@ -20,11 +20,11 @@ services:
       SMTP_PORT: 1025
       SMTP_USER: ""
       SMTP_PASSWORD: ""
-      APP_URL: "http://localhost:8765"
+      APP_URL: "http://local.todo.com"
       # These will be loaded from the .env file
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      GOOGLE_REDIRECT_URL: "http://localhost:8765/auth/google/callback"
+      GOOGLE_REDIRECT_URL: "http://local.todo.com/auth/google/callback"
     depends_on:
       - mysql
       - mailpit
