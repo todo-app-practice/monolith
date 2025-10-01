@@ -41,7 +41,7 @@ func (s *service) SendVerificationEmail(to, firstName, verificationToken string)
 	m.SetHeader("To", to)
 	m.SetHeader("Subject", "Verify Your Email Address")
 
-	verificationURL := fmt.Sprintf("%s/verify-email?token=%s", s.appURL, verificationToken)
+	verificationURL := fmt.Sprintf("%s/user/verify-email?token=%s", s.appURL, verificationToken)
 
 	body := fmt.Sprintf(`
 <html>

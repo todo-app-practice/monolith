@@ -71,8 +71,8 @@ func InitializeServer() {
 
 				// Public routes that do not require authentication
 				isPublicRoute := (method == http.MethodPost && path == "/user") ||
-					path == "/login" ||
-					path == "/verify-email" ||
+					path == "/auth/login" ||
+					strings.Contains(path, "/user/verify-email") ||
 					strings.HasPrefix(path, "/auth/google/") ||
 					strings.Contains(path, "/swagger")
 
