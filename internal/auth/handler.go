@@ -205,7 +205,7 @@ func (h *endpointHandler) googleCallback(ctx echo.Context) error {
 	}
 	userBase64 := base64.URLEncoding.EncodeToString(userJSON)
 
-	frontendURL := "http://localhost:5173" // This should be an env var in a real app
+	frontendURL := "http://local.todo.com" // This should be an env var in a real app
 	redirectURL := fmt.Sprintf(
 		"%s/login/success?token=%s&refresh=%s&user=%s",
 		frontendURL,

@@ -1,3 +1,7 @@
+networks:
+  todo-network:
+    external: true
+
 services:
   todo-app:
     container_name: todo-app
@@ -10,6 +14,8 @@ services:
       - type: bind
         source: .
         target: /home/app
+    networks:
+      - todo-network
     environment:
       DB_USER: root
       DB_PASSWORD: root
@@ -25,34 +31,10 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_REDIRECT_URL: "http://local.todo.com/auth/google/callback"
-    depends_on:
-      - mysql
-      - mailpit
     command: ["air"]
-
-  mysql:
-    image: mysql:8
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: todo
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-
-  mailpit:
-    image: axllent/mailpit:latest
-    container_name: mailpit
-    ports:
-      - "1025:1025"  # SMTP port
-      - "8025:8025"  # Web UI port
-    environment:
-      MP_SMTP_AUTH_ACCEPT_ANY: 1
-      MP_SMTP_AUTH_ALLOW_INSECURE: 1
-    volumes:
-      - mailpit_data:/data
-
-volumes:
-  mysql_data:
-  mailpit_data:
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.monolith.rule=Host(`local.todo.com`) && (PathPrefix(`/auth`) || PathPrefix(`/user`) || PathPrefix(`/todos`))
+      - traefik.http.routers.monolith.entrypoints=web
+      - traefik.http.services.monolith.loadbalancer.server.port=8765
+      - traefik.http.routers.monolith.service=monolith
